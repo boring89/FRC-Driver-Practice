@@ -1,5 +1,6 @@
 {
   "name": "2910 Jack in the Bot (2025)",
+  "year": 2025,
   "mass_kg": 63.5,
   "inertia_kgm2": {"roll": 3.0, "pitch": 3.5, "yaw": 5.5},
   "com_m": [0.0, 0.0, 0.11],

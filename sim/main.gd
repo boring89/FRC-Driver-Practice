@@ -1,8 +1,8 @@
 extends Node3D
-## Practice session: one field, one robot, one driver.
+## Practice session: one field, one robot, one driver. Which field and robot
+## comes from Session.
 
-const ROBOT_CONFIG := "res://data/robots/2910_2025.json"
-const FIELD_YEAR := 2025
+const TITLE_SCENE := "res://sim/menu/title_menu.tscn"
 const START_POSITION := Vector2(1.6, 2.0)
 
 var robot := SwerveRobot.new()
@@ -12,18 +12,19 @@ var pieces: GamePieces
 
 
 func _ready() -> void:
+	Settings.apply(get_tree())
 	_build_lighting()
 	# The CAD field only exists once scripts/build_field.py has been run.
-	if ResourceLoader.exists(CadField.asset_path(FIELD_YEAR)):
-		add_child(CadField.new(FIELD_YEAR))
+	if ResourceLoader.exists(CadField.asset_path(Session.year)):
+		add_child(CadField.new(Session.year))
 	else:
 		add_child(PlaceholderField.new())
 
-	if FileAccess.file_exists(GamePieces.data_path(FIELD_YEAR)):
-		pieces = GamePieces.new(FIELD_YEAR)
+	if FileAccess.file_exists(GamePieces.data_path(Session.year)):
+		pieces = GamePieces.new(Session.year)
 		add_child(pieces)
 
-	robot.setup(SwerveRobot.load_config(ROBOT_CONFIG), Color(0.1, 0.25, 0.85))
+	robot.setup(SwerveRobot.load_config(Session.robot_config), Color(0.1, 0.25, 0.85))
 	add_child(robot)
 	robot.reset_pose(START_POSITION, 0.0)
 
@@ -47,30 +48,16 @@ func _ready() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	var key := event as InputEventKey
-	var button := event as InputEventJoypadButton
-	if key and key.pressed and not key.echo:
-		match key.physical_keycode:
-			KEY_R:
-				_reset()
-			KEY_C:
-				camera.cycle()
-			KEY_H:
-				_feed_coral()
-			KEY_L:
-				_preload_coral()
-			KEY_ESCAPE:
-				get_tree().quit()
-	elif button and button.pressed:
-		match button.button_index:
-			JOY_BUTTON_START:
-				_reset()
-			JOY_BUTTON_BACK:
-				camera.cycle()
-			JOY_BUTTON_RIGHT_SHOULDER:
-				_feed_coral()
-			JOY_BUTTON_LEFT_SHOULDER:
-				_preload_coral()
+	if event.is_action_pressed("reset"):
+		_reset()
+	elif event.is_action_pressed("camera"):
+		camera.cycle()
+	elif event.is_action_pressed("feed_coral"):
+		_feed_coral()
+	elif event.is_action_pressed("preload_coral"):
+		_preload_coral()
+	elif event.is_action_pressed("ui_cancel"):
+		get_tree().change_scene_to_file(TITLE_SCENE)
 
 
 func _reset() -> void:
@@ -96,8 +83,9 @@ func _build_lighting() -> void:
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-60.0, -35.0, 0.0)
 	sun.light_energy = 1.1
-	sun.shadow_enabled = true
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.shadow_enabled = Settings.quality > 0
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if Settings.quality == 2 \
+			else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 	sun.directional_shadow_max_distance = 30.0
 	add_child(sun)
 

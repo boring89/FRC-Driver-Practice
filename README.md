@@ -10,13 +10,14 @@ Godot 4.7 放在 `tools/godot/`（不進版控）。第一次或新增腳本後�
 tools/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --import
 ```
 
-開始練習：
+啟動（會先進標題選單，選賽季和機器人後開始練習；Settings 裡可以調畫質和鍵位）：
 
 ```bash
 tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path .
 ```
 
-左搖桿 / WASD 移動，右搖桿 / Q E 旋轉，Start / R 重置，Back / C 切換視角。
+預設鍵位：左搖桿 / WASD 移動，右搖桿 / Q E 旋轉，Start / R 重置，Back / C 切換視角，Esc 回標題選單。
+除了搖桿駕駛和數字鍵之外，其餘鍵位都能在 Settings 的 Controls 分頁重新綁定；設定存在 `user://settings.cfg`。
 機構預設姿勢用數字鍵（依設定檔裡的順序）或設定檔指定的手把按鍵切換。
 
 遊戲物件：Space / RT 吸入、F / LT 往前送出（得分）、G / 按下右搖桿從入口退回、
@@ -87,6 +88,7 @@ tools/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --fixed-fps 240
 - `sim/physics/`：馬達與電池模型
 - `sim/robot/`：swerve 模組、底盤、驅動控制、機構（關節與上層結構）
 - `sim/field/`：場地（CAD 場地與替代場地）、遊戲物件
+- `sim/menu/`：標題選單與設定畫面；`sim/settings.gd` 是設定的讀寫與套用
 - `data/fields/`：每年場地的處理設定（座標、要移除的遊戲物件、材質）
 - `scripts/`：Onshape 匯出與 Blender 場地建置
 - `cad/sources.json`：Onshape CAD 來源連結

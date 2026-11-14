@@ -7,7 +7,7 @@ config_version=5
 [application]
 
 config/name="FRC Driver Practice"
-run/main_scene="res://sim/main.tscn"
+run/main_scene="res://sim/menu/title_menu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [display]

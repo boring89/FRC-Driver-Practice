@@ -41,14 +41,20 @@ func _process(_dt: float) -> void:
 			names.append(preset["name"])
 		lines.append("%s    [%s]" % ["   ".join(joints), superstructure.preset_name])
 		lines.append("")
-		lines.append("Keys 1-9: %s    Tab: pose editor (all %d presets)" % ["  ".join(names.slice(0, 9)), names.size()])
+		lines.append("Keys 1-9: %s    %s: pose editor (all %d presets)" % [
+			"  ".join(names.slice(0, 9)), Settings.key_name("pose_editor"), names.size()])
 	if robot.intake:
 		lines.append("Holding: %s" % (robot.intake.held.kind if robot.intake.held else "nothing"))
-		lines.append("Space / RT: intake    F / LT: score    G / R-stick: spit back out")
-		lines.append("H / RB: feed coral at the station    L / LB: preload coral")
+		lines.append("%s: intake    %s: score    %s: spit back out" % [
+			Settings.describe("intake"), Settings.describe("score"), Settings.describe("spit")])
+		lines.append("%s: feed coral at the station    %s: preload coral" % [
+			Settings.describe("feed_coral"), Settings.describe("preload_coral")])
 	lines.append_array([
 		"",
-		"Left stick / WASD: move    Right stick / Q E: turn",
-		"Start / R: reset    Back / C: camera (%s)    Esc: quit" % CameraRig.MODE_NAMES[camera.mode],
+		"Left stick / %s %s %s %s: move    Right stick / %s %s: turn" % [
+			Settings.key_name("move_forward"), Settings.key_name("move_left"), Settings.key_name("move_back"),
+			Settings.key_name("move_right"), Settings.key_name("turn_left"), Settings.key_name("turn_right")],
+		"%s: reset    %s: camera (%s)    Esc: menu" % [
+			Settings.describe("reset"), Settings.describe("camera"), CameraRig.MODE_NAMES[camera.mode]],
 	])
 	_label.text = "\n".join(lines)

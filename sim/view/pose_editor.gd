@@ -1,7 +1,8 @@
 class_name PoseEditor
 extends CanvasLayer
 ## Panel for posing the robot's mechanisms by hand and saving the result as a
-## preset. Tab opens and closes it; while open the joints follow the sliders
+## preset. The pose editor action (Tab) opens and closes it; while open the
+## joints follow the sliders
 ## directly, without the usual retract-swing-extend sequencing.
 
 var robot: SwerveRobot
@@ -81,14 +82,18 @@ func _ready() -> void:
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_status)
 	var hint := Label.new()
-	hint.text = "Right-drag: orbit    Wheel: zoom    Tab: close"
+	hint.text = "Right-drag: orbit    Wheel: zoom    %s: close" % Settings.key_name("pose_editor")
 	hint.modulate = Color(1.0, 1.0, 1.0, 0.6)
 	column.add_child(hint)
 
 
-func _unhandled_input(event: InputEvent) -> void:
+# Handled ahead of the GUI, which would otherwise use Tab to move focus
+# between the panel's own controls.
+func _input(event: InputEvent) -> void:
 	var key := event as InputEventKey
-	if key and key.pressed and not key.echo and key.physical_keycode == KEY_TAB:
+	if key and key.physical_keycode != KEY_TAB and get_viewport().gui_get_focus_owner() is LineEdit:
+		return
+	if event.is_action_pressed("pose_editor"):
 		_set_open(not visible)
 		get_viewport().set_input_as_handled()
 
