@@ -2,8 +2,16 @@ class_name DriverInput
 extends Node
 ## Reads the driver's gamepad (or keyboard) and writes the robot's drive command.
 ## Left stick translates, right stick X rotates; W/A/S/D and Q/E on keyboard.
+## Mechanism presets are on the buttons named in the robot config and on the
+## number keys, in the order the config lists them.
 
 const DEADBAND := 0.1
+const _BUTTONS := {
+	"a": JOY_BUTTON_A, "b": JOY_BUTTON_B, "x": JOY_BUTTON_X, "y": JOY_BUTTON_Y,
+	"lb": JOY_BUTTON_LEFT_SHOULDER, "rb": JOY_BUTTON_RIGHT_SHOULDER,
+	"dpad_up": JOY_BUTTON_DPAD_UP, "dpad_down": JOY_BUTTON_DPAD_DOWN,
+	"dpad_left": JOY_BUTTON_DPAD_LEFT, "dpad_right": JOY_BUTTON_DPAD_RIGHT,
+}
 
 var robot: SwerveRobot
 
@@ -32,6 +40,22 @@ func _physics_process(_dt: float) -> void:
 	translate = _shape(translate)
 	turn = _shape(Vector2(turn, 0.0)).x
 	robot.command = Vector3(translate.x * robot.max_speed, translate.y * robot.max_speed, turn * robot.max_omega)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if robot == null or robot.superstructure == null:
+		return
+	var presets := robot.superstructure.presets
+	var key := event as InputEventKey
+	var button := event as InputEventJoypadButton
+	if key and key.pressed and not key.echo:
+		var index := key.physical_keycode - KEY_1
+		if index >= 0 and index < presets.size():
+			robot.superstructure.go_to(presets[index])
+	elif button and button.pressed:
+		for preset: Dictionary in presets:
+			if _BUTTONS.get(preset.get("button", ""), -1) == button.button_index:
+				robot.superstructure.go_to(preset)
 
 
 ## Radial deadband, then squared magnitude for finer control near centre.

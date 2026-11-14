@@ -2,8 +2,8 @@
   "name": "2910 Jack in the Bot (2025)",
   "mass_kg": 63.5,
   "inertia_kgm2": {"roll": 3.0, "pitch": 3.5, "yaw": 5.5},
-  "com_m": [0.0, 0.0, 0.18],
-  "frame_m": [0.711, 0.660],
+  "com_m": [0.0, 0.0, 0.11],
+  "frame_m": [0.711, 0.66],
   "ground_clearance_m": 0.03,
   "bumper_thickness_m": 0.07,
   "bumper_zone_m": [0.02, 0.164],
@@ -12,7 +12,7 @@
   "swerve": {
     "module_positions_m": [[0.289, 0.2635], [0.289, -0.2635], [-0.289, 0.2635], [-0.289, -0.2635]],
     "wheel_radius_m": 0.0508,
-    "wheel_inertia_kgm2": 4.0e-4,
+    "wheel_inertia_kgm2": 0.0004,
     "drive": {
       "motor": "kraken_x60",
       "gearing": 6.75,
@@ -39,6 +39,112 @@
       "slip_fraction": 0.1,
       "scrub_radius_m": 0.012
     }
+  },
+  "mechanism": {
+    "joints": [
+      {
+        "name": "arm",
+        "type": "revolute",
+        "origin_m": [-0.26, 0.0, 0.324],
+        "axis": [0, -1, 0],
+        "range": [0, 120],
+        "motor": "kraken_x60",
+        "motor_count": 3,
+        "gearing": 120.8,
+        "stator_limit_a": 60.0,
+        "supply_limit_a": 40.0,
+        "friction": 2.0,
+        "kp_v": 0.7,
+        "kd_v": 0.035,
+        "max_velocity": 230.0,
+        "max_acceleration": 570.0,
+        "links": [
+          {"name": "arm_stage0", "mass_kg": 4.0}
+        ]
+      },
+      {
+        "name": "extension",
+        "type": "prismatic",
+        "parent": "arm",
+        "origin_m": [0.0, 0.0, 0.202],
+        "axis": [1, 0, 0],
+        "range": [0, 1.1],
+        "motor": "kraken_x60",
+        "motor_count": 3,
+        "gearing": 11.0,
+        "meters_per_output_rad": 0.04,
+        "stator_limit_a": 60.0,
+        "supply_limit_a": 40.0,
+        "friction": 20.0,
+        "kp_v": 60.0,
+        "kd_v": 2.0,
+        "max_velocity": 1.8,
+        "max_acceleration": 20.0,
+        "links": [
+          {"name": "arm_stage1", "mass_kg": 2.0, "ratio": 0.5},
+          {"name": "arm_stage2", "mass_kg": 1.5}
+        ]
+      },
+      {
+        "name": "wrist",
+        "type": "revolute",
+        "parent": "extension",
+        "origin_m": [0.368, 0.0, 0.197],
+        "axis": [0, -1, 0],
+        "range": [-130, 60],
+        "motor": "kraken_x60",
+        "motor_count": 1,
+        "gearing": 40.0,
+        "stator_limit_a": 40.0,
+        "supply_limit_a": 30.0,
+        "friction": 0.5,
+        "kp_v": 0.5,
+        "kd_v": 0.01,
+        "max_velocity": 570.0,
+        "max_acceleration": 3400.0,
+        "links": [
+          {"name": "intake", "mass_kg": 4.5}
+        ]
+      }
+    ],
+    "sequence": {"slide": "extension", "swing": "arm", "retracted_m": 0.0, "swing_tolerance_deg": 20},
+    "presets": [
+      {
+        "name": "stow",
+        "button": "a",
+        "positions": {"arm": 0, "extension": 0.0, "wrist": 0}
+      },
+      {
+        "name": "station",
+        "button": "b",
+        "positions": {"arm": 50, "extension": 0.0, "wrist": 20}
+      },
+      {
+        "name": "ground",
+        "button": "x",
+        "positions": {"arm": 0, "extension": 0.25, "wrist": -100}
+      },
+      {
+        "name": "l1",
+        "button": "dpad_down",
+        "positions": {"arm": 22, "extension": 0.05, "wrist": -40}
+      },
+      {
+        "name": "l2",
+        "button": "dpad_left",
+        "positions": {"arm": 40, "extension": 0.185, "wrist": -40}
+      },
+      {
+        "name": "l3",
+        "button": "dpad_up",
+        "positions": {"arm": 58, "extension": 0.425, "wrist": -58}
+      },
+      {
+        "name": "l4",
+        "button": "y",
+        "positions": {"arm": 70, "extension": 0.96, "wrist": -70}
+      }
+    ]
   },
   "model": "res://assets/robots/2910_2025",
   "cad": {

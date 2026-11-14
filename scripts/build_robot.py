@@ -7,7 +7,7 @@ origin on the floor under the frame centre) with one mesh per moving link:
 "chassis", "steer_N" with child "wheel_N" for each swerve module (posed
 straight ahead, origin at the wheel centre), and the links named in the
 config. Writes <output dir>/model.json with what the CAD says about module
-positions, wheel size, overall bounds and a convex hull of the superstructure.
+positions, wheel size, overall bounds, and each link's centroid and convex hull.
 """
 
 import json
@@ -25,7 +25,7 @@ from mathutils import Matrix, Vector
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cadlib import linear, part_name, principled, world_corners
 
-HULL_POINTS = 48
+HULL_POINTS = 32
 
 source, config_path, out_dir = sys.argv[sys.argv.index("--") + 1:]
 config = json.loads(Path(config_path).read_text())
@@ -187,11 +187,8 @@ for index, module in modules.items():
     steer.location = centre
     wheel.parent = steer
 
-# --- Convex hull of everything above the drivebase, for collision. ---
-superstructure = [merged[rule["name"]] for rule in cad["links"] if rule["name"] in merged]
-hull_points = []
-if superstructure:
-    points = np.concatenate([mesh_points(o) for o in superstructure])
+# --- Per-link collision hull and centroid, in the stowed pose. ---
+def convex_hull(points):
     work = bmesh.new()
     for point in points[:: max(1, len(points) // 20000)]:
         work.verts.new(point)
@@ -201,14 +198,25 @@ if superstructure:
     hull_mesh = bpy.data.meshes.new("hull")
     work.to_mesh(hull_mesh)
     work.free()
-    hull = bpy.data.objects.new("hull", hull_mesh)
-    scene.collection.objects.link(hull)
     if len(hull_mesh.vertices) > HULL_POINTS:
+        hull = bpy.data.objects.new("hull", hull_mesh)
+        scene.collection.objects.link(hull)
         modifier = hull.modifiers.new("decimate", "DECIMATE")
         modifier.ratio = HULL_POINTS / len(hull_mesh.vertices)
         hull_mesh = bpy.data.meshes.new_from_object(hull.evaluated_get(bpy.context.evaluated_depsgraph_get()))
-    hull_points = [[round(c, 4) for c in v.co] for v in hull_mesh.vertices]
-    bpy.data.objects.remove(hull)
+        bpy.data.objects.remove(hull)
+    return [[round(c, 4) for c in v.co] for v in hull_mesh.vertices]
+
+
+link_meta = {}
+for rule in cad["links"]:
+    if rule["name"] not in merged:
+        continue
+    points = mesh_points(merged[rule["name"]])
+    link_meta[rule["name"]] = {
+        "centroid": [round(float(v), 4) for v in points.mean(axis=0)],
+        "hull": convex_hull(points),
+    }
 
 all_points = np.concatenate([mesh_points(o) for o in merged.values() if not o.name.startswith(("steer", "wheel"))])
 meta = {
@@ -220,7 +228,7 @@ meta = {
     "wheel_radius_m": round(float(np.mean([m["radius"] for m in modules.values()])), 4),
     "bounds_min_m": [round(float(v), 4) for v in all_points.min(axis=0)],
     "bounds_max_m": [round(float(v), 4) for v in all_points.max(axis=0)],
-    "hull": hull_points,
+    "links": link_meta,
 }
 (out_dir / "model.json").write_text(json.dumps(meta, indent=1) + "\n")
 
@@ -230,4 +238,5 @@ bpy.ops.export_scene.gltf(
 size = (out_dir / "robot.glb").stat().st_size / 1e6
 print(f"wrote {out_dir / 'robot.glb'} ({size:.1f} MB), "
       f"{sum(len(o.data.polygons) for o in merged.values())} triangles")
-print(json.dumps({k: v for k, v in meta.items() if k != "hull"}))
+print(json.dumps({k: v for k, v in meta.items() if k != "links"}))
+print({name: (link["centroid"], len(link["hull"])) for name, link in link_meta.items()})

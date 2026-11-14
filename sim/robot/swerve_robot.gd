@@ -16,6 +16,8 @@ var config: Dictionary
 var modules: Array[SwerveModule] = []
 var controller: SwerveController
 var battery := Battery.new()
+## Mechanisms above the drivebase; null for a robot without a CAD model.
+var superstructure: Superstructure
 
 ## Driver request: x, y in m/s and z in rad/s.
 var command := Vector3.ZERO
@@ -93,9 +95,14 @@ func reset_pose(field_xy: Vector2, heading: float) -> void:
 			Basis(Vector3.UP, heading), Frc.to_godot(Vector3(field_xy.x, field_xy.y, 0.0)))
 	linear_velocity = Vector3.ZERO
 	angular_velocity = Vector3.ZERO
+	# Tell the physics server directly: a node transform set late in a frame can
+	# otherwise be overwritten by the body's own state before it is picked up.
+	PhysicsServer3D.body_set_state(get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, global_transform)
 	command = Vector3.ZERO
 	for m in modules:
 		m.reset()
+	if superstructure:
+		superstructure.reset()
 
 
 func _physics_process(dt: float) -> void:
@@ -103,6 +110,9 @@ func _physics_process(dt: float) -> void:
 	if _code_time >= controller.period:
 		_code_time = fmod(_code_time, controller.period)
 		controller.update(command, field_relative, yaw() - driver_heading)
+	# Mechanism position loops run on the motor controllers, far faster than robot code.
+	if superstructure:
+		superstructure.update_controllers(dt, self)
 
 	var space := get_world_3d().direct_space_state
 	var xf := global_transform
@@ -142,6 +152,8 @@ func _physics_process(dt: float) -> void:
 			other.apply_force(-tire_force, contact - other.global_position)
 		total_current += m.supply_current
 
+	if superstructure:
+		total_current += superstructure.step(dt, self, battery.voltage)
 	battery.step(total_current, dt)
 
 
@@ -242,19 +254,9 @@ func _build_cad_model(model_dir: String) -> void:
 		_wheel_pivots.append(model.find_child("steer_%d" % i, true, false))
 		_wheel_spinners.append(model.find_child("wheel_%d" % i, true, false))
 
-	# Everything above the bumpers collides as one convex hull.
 	var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(model_dir.path_join("model.json")))
-	var hull: Array = meta["hull"]
-	if hull.is_empty():
-		return
-	var points := PackedVector3Array()
-	for point: Array in hull:
-		points.append(Frc.to_godot(Vector3(point[0], point[1], point[2])))
-	var shape := ConvexPolygonShape3D.new()
-	shape.points = points
-	var collider := CollisionShape3D.new()
-	collider.shape = shape
-	add_child(collider)
+	superstructure = Superstructure.new()
+	superstructure.setup(config.get("mechanism", {}), model, meta, self)
 
 
 func _add_box(center: Vector3, size: Vector3, material: Material) -> void:

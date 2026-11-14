@@ -17,6 +17,7 @@ tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path .
 ```
 
 左搖桿 / WASD 移動，右搖桿 / Q E 旋轉，Start / R 重置，Back / C 切換視角。
+機構預設姿勢用數字鍵（依設定檔裡的順序）或設定檔指定的手把按鍵切換。
 
 ## 場地（從 Onshape CAD 建置）
 
@@ -55,6 +56,12 @@ tools/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --fixed-fps 240
 tools/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --fixed-fps 240 -s res://tests/field_test.gd
 ```
 
+機構測試（需要先建置機器人模型）：
+
+```bash
+tools/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --fixed-fps 240 -s res://tests/mechanism_test.gd
+```
+
 駕駛測試可以指定機器人設定檔：
 
 ```bash
@@ -66,7 +73,7 @@ tools/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --fixed-fps 240
 - `data/motors.json`：馬達常數（WPILib DCMotor）
 - `data/robots/`：每台機器人一個設定檔（質量、馬達、齒比、限流、輪胎）
 - `sim/physics/`：馬達與電池模型
-- `sim/robot/`：swerve 模組、底盤、驅動控制
+- `sim/robot/`：swerve 模組、底盤、驅動控制、機構（關節與上層結構）
 - `sim/field/`：場地（CAD 場地與替代場地）
 - `data/fields/`：每年場地的處理設定（座標、要移除的遊戲物件、材質）
 - `scripts/`：Onshape 匯出與 Blender 場地建置
