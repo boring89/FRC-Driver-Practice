@@ -53,10 +53,12 @@ func _process(_dt: float) -> void:
 		return
 	_blue_score.text = str(game.scores["blue"])
 	_red_score.text = str(game.scores["red"])
-	var seconds := ceili(game.time_left)
+	var seconds := floori(game.time_left) if game.free_practice else ceili(game.time_left)
 	_clock.text = "%d:%02d" % [seconds / 60, seconds % 60]
 	_clock.add_theme_color_override("font_color", _ENDGAME if game.in_endgame() else Color.WHITE)
-	if not game.running:
+	if game.free_practice:
+		_phase.text = "FREE PRACTICE"
+	elif not game.running:
 		_phase.text = "MATCH OVER"
 	elif game.in_endgame():
 		_phase.text = "ENDGAME"

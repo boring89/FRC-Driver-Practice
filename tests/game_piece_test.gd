@@ -130,7 +130,7 @@ func _run() -> void:
 	var field: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/fields/%d.json" % YEAR))
 	var game := Match.new(field, pieces)
 	root.add_child(game)
-	game.start()
+	game.start(135.0)
 	# A coral scored by the robot itself: nose-first on L4 of the blue reef.
 	robot.reset_pose(Vector2(REEF_FACE_X - 0.425, BRANCH_Y), 0.0)
 	await _wait(0.5)
@@ -175,6 +175,9 @@ func _run() -> void:
 	game.time_left = 0.2
 	await _wait(0.5)
 	_check("the match ends when the clock runs out", not game.running and game.time_left == 0.0)
+	game.start(135.0, true)
+	await _wait(0.5)
+	_check("free practice counts up and does not end", game.running and game.time_left > 0.4 and not game.in_endgame())
 	game.queue_free()
 
 	print("\n== Choosing poses and branches ==")
@@ -199,6 +202,10 @@ func _run() -> void:
 	print("far-side left target (%.3f, %.3f), heading %.0f deg" % [far.x, far.y, rad_to_deg(far.z)])
 	_check("left branch on the far side is still to the driver's left", absf(far.y - BRANCH_Y) < 0.01)
 	_check("far-side target is beyond the reef", far.x > 5.3)
+	# A red driver looks the other way down the field, so their left is lower y.
+	robot.driver_heading = PI
+	_check("left and right swap for the red driver", absf(chooser.align_target(1.0).y - (BRANCH_Y - 2.0 * 0.1643)) < 0.01)
+	robot.driver_heading = 0.0
 	chooser.queue_free()
 
 	print("\n== Auto-align, then score ==")
@@ -218,8 +225,7 @@ func _run() -> void:
 	# higher-y one; the back pose has the robot facing away, along -x.
 	var goal := driver.align_target(1.0)
 	for tick in int(2.5 * Engine.physics_ticks_per_second):
-		var pose := Frc.from_godot(robot.global_position)
-		robot.command = driver.reef_align.command(Vector2(pose.x, pose.y), robot.yaw(), goal)
+		robot.command = driver.align_command(1.0)
 		await physics_frame
 	robot.command = Vector3.ZERO
 	var arrived := Frc.from_godot(robot.global_position)
@@ -238,6 +244,22 @@ func _run() -> void:
 	var hung := Frc.from_godot(aligned.global_position)
 	print("coral rests at height %.3f m" % hung.z)
 	_check("coral stays on the L4 branch after auto-align", hung.z > 1.6 and hung.z < 1.8)
+
+	# The same from the red driver's side of the field: their commands are
+	# turned half a circle, and auto-align has to allow for it.
+	robot.driver_heading = PI
+	robot.superstructure.go_to(presets["l4"])
+	robot.reset_pose(Vector2(2.2, BRANCH_Y - 0.9), -0.5)
+	var red_goal := driver.align_target(1.0)
+	for tick in int(2.5 * Engine.physics_ticks_per_second):
+		robot.command = driver.align_command(1.0)
+		await physics_frame
+	robot.command = Vector3.ZERO
+	var red_arrived := Frc.from_godot(robot.global_position)
+	var red_miss := Vector2(red_arrived.x - red_goal.x, red_arrived.y - red_goal.y).length()
+	print("as the red driver: stopped %.3f m from the scoring spot" % red_miss)
+	_check("auto-align works from the red driver's frame", red_miss < 0.03)
+	robot.driver_heading = 0.0
 
 	print("\n%s" % ("ALL PASSED" if failures == 0 else "%d FAILED" % failures))
 	quit(failures)

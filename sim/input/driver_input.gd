@@ -65,8 +65,7 @@ func _physics_process(_dt: float) -> void:
 
 	var side := float(Input.is_action_pressed("align_left")) - float(Input.is_action_pressed("align_right"))
 	if reef_align and side != 0.0 and not typing:
-		var pose := Frc.from_godot(robot.global_position)
-		robot.command = reef_align.command(Vector2(pose.x, pose.y), robot.yaw(), align_target(side))
+		robot.command = align_command(side)
 
 
 ## The preset for reef level `level` in the current mode: the tail-first one
@@ -93,6 +92,15 @@ func align_target(side: float) -> Vector3:
 	var backward: bool = _controls().get("back_to_reef", []).has(preset)
 	var half_length := 0.5 * float(robot.config["frame_m"][0]) + float(robot.config["bumper_thickness_m"])
 	return reef_align.target(Vector2(pose.x, pose.y), half_length, standoff, side, backward, robot.driver_heading)
+
+
+## Drive command that auto-aligns to the branch on `side`, in the frame the
+## robot takes its commands in: relative to the way the driver faces.
+func align_command(side: float) -> Vector3:
+	var pose := Frc.from_godot(robot.global_position)
+	var field := reef_align.command(Vector2(pose.x, pose.y), robot.yaw(), align_target(side))
+	var seen := Vector2(field.x, field.y).rotated(-robot.driver_heading)
+	return Vector3(seen.x, seen.y, field.z)
 
 
 func _unhandled_input(event: InputEvent) -> void:

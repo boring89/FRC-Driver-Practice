@@ -15,8 +15,11 @@ const _REST_SPEED := 0.25
 # How close a coral's centre must be to where one hangs on a branch.
 const _BRANCH_REACH := 0.09
 
+## Seconds left on the clock, or seconds played so far in free practice.
 var time_left := 0.0
 var running := false
+## No clock to run out: the match keeps score until it is restarted.
+var free_practice := false
 var scores := {"blue": 0, "red": 0}
 
 var _cfg: Dictionary
@@ -53,26 +56,29 @@ func _init(field: Dictionary, pieces: GamePieces) -> void:
 					})
 
 
-func start() -> void:
-	time_left = _cfg["seconds"]
+## Starts a match of `seconds`, or an open-ended one counting up from zero.
+func start(seconds: float, open_ended := false) -> void:
+	free_practice = open_ended
+	time_left = 0.0 if open_ended else seconds
 	running = true
 	_processed = {"blue": 0, "red": 0}
 	scores = {"blue": 0, "red": 0}
 
 
 func in_endgame() -> bool:
-	return running and time_left <= float(_cfg["endgame_seconds"])
+	return running and not free_practice and time_left <= float(_cfg["endgame_seconds"])
 
 
 func _physics_process(dt: float) -> void:
 	if not running:
 		return
-	time_left = maxf(0.0, time_left - dt)
+	time_left = time_left + dt if free_practice else maxf(0.0, time_left - dt)
+	var over := not free_practice and time_left == 0.0
 	_since_evaluation += dt
-	if _since_evaluation >= _EVALUATE_PERIOD or time_left == 0.0:
+	if _since_evaluation >= _EVALUATE_PERIOD or over:
 		_since_evaluation = 0.0
 		evaluate()
-	if time_left == 0.0:
+	if over:
 		running = false
 
 

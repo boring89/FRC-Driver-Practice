@@ -1,6 +1,7 @@
 extends Node3D
 ## Title screen: the selected season's field turning slowly behind a menu for
-## choosing the season and robot, opening the settings, or quitting.
+## choosing the season and robot, opening the settings, or quitting. Play goes
+## on to the match setup screen.
 
 const PRACTICE_SCENE := "res://sim/main.tscn"
 const FIELDS_DIR := "res://data/fields"
@@ -14,6 +15,7 @@ var _menu := VBoxContainer.new()
 var _season_item: Button
 var _robot_item: Button
 var _settings := SettingsPanel.new()
+var _setup := MatchSetup.new()
 # Seasons as [year, name], robots of the chosen season as [config path, name].
 var _seasons: Array = []
 var _robots: Array = []
@@ -59,6 +61,10 @@ func _ready() -> void:
 	_settings.visible = false
 	_settings.closed.connect(_menu.show)
 	layer.add_child(_settings)
+	_setup.visible = false
+	_setup.closed.connect(_menu.show)
+	_setup.started.connect(get_tree().change_scene_to_file.bind(PRACTICE_SCENE))
+	layer.add_child(_setup)
 
 	for file in DirAccess.get_files_at(FIELDS_DIR):
 		if file.get_extension() == "json":
@@ -119,8 +125,10 @@ func _cycle_robot() -> void:
 func _on_play() -> void:
 	Session.year = _seasons[_season][0]
 	Session.robot_config = _robots[_robot][0]
-	Settings.save_file()
-	get_tree().change_scene_to_file(PRACTICE_SCENE)
+	var field: Dictionary = JSON.parse_string(
+			FileAccess.get_file_as_string(FIELDS_DIR.path_join("%d.json" % Session.year)))
+	_menu.visible = false
+	_setup.open(JSON.parse_string(FileAccess.get_file_as_string(Session.robot_config)), field)
 
 
 func _on_settings() -> void:

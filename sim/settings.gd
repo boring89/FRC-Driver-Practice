@@ -77,6 +77,11 @@ static func load_file() -> void:
 	fps_limit = file.get_value("graphics", "fps_limit", fps_limit)
 	Session.year = file.get_value("session", "year", Session.year)
 	Session.robot_config = file.get_value("session", "robot_config", Session.robot_config)
+	Session.alliance = file.get_value("session", "alliance", Session.alliance)
+	Session.start_position = file.get_value("session", "start_position", Session.start_position)
+	Session.start_heading = file.get_value("session", "start_heading", Session.start_heading)
+	Session.free_practice = file.get_value("session", "free_practice", Session.free_practice)
+	Session.match_seconds = file.get_value("session", "match_seconds", Session.match_seconds)
 	if file.get_value("meta", "bindings_version", 0) != _BINDINGS_VERSION:
 		return
 	for action: Array in ACTIONS:
@@ -92,6 +97,11 @@ static func save_file() -> void:
 	file.set_value("graphics", "fps_limit", fps_limit)
 	file.set_value("session", "year", Session.year)
 	file.set_value("session", "robot_config", Session.robot_config)
+	file.set_value("session", "alliance", Session.alliance)
+	file.set_value("session", "start_position", Session.start_position)
+	file.set_value("session", "start_heading", Session.start_heading)
+	file.set_value("session", "free_practice", Session.free_practice)
+	file.set_value("session", "match_seconds", Session.match_seconds)
 	file.set_value("meta", "bindings_version", _BINDINGS_VERSION)
 	for action: Array in ACTIONS:
 		file.set_value("keys", action[0], keys[action[0]])

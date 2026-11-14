@@ -9,14 +9,14 @@
   "bumper_thickness_m": 0.07,
   "bumper_zone_m": [0.02, 0.164],
   "battery": {"open_circuit_v": 12.6, "resistance_ohm": 0.02, "quiescent_a": 3.0},
-  "driver": {"max_speed_mps": 4.7, "max_omega_radps": 9.0},
+  "driver": {"max_speed_mps": 5.1, "max_omega_radps": 9.0},
   "swerve": {
     "module_positions_m": [[0.289, 0.2635], [0.289, -0.2635], [-0.289, 0.2635], [-0.289, -0.2635]],
     "wheel_radius_m": 0.0508,
     "wheel_inertia_kgm2": 0.0004,
     "drive": {
       "motor": "kraken_x60",
-      "gearing": 6.75,
+      "gearing": 5.9,
       "stator_limit_a": 80.0,
       "supply_limit_a": 60.0,
       "friction_nm": 0.15,

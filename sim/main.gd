@@ -3,7 +3,6 @@ extends Node3D
 ## comes from Session.
 
 const TITLE_SCENE := "res://sim/menu/title_menu.tscn"
-const START_POSITION := Vector2(1.6, 2.0)
 
 var robot := SwerveRobot.new()
 var camera := CameraRig.new()
@@ -28,8 +27,9 @@ func _ready() -> void:
 		add_child(pieces)
 
 	robot.setup(SwerveRobot.load_config(Session.robot_config), Color(0.1, 0.25, 0.85))
+	robot.driver_heading = Session.driver_heading()
 	add_child(robot)
-	robot.reset_pose(START_POSITION, 0.0)
+	_place_robot()
 
 	driver.robot = robot
 	var field_config := "res://data/fields/%d.json" % Session.year
@@ -40,10 +40,11 @@ func _ready() -> void:
 		if field.has("match") and pieces:
 			game = Match.new(field, pieces)
 			add_child(game)
-			game.start()
+			game.start(Session.match_seconds, Session.free_practice)
 	add_child(driver)
 
 	camera.target = robot
+	camera.driver_heading = Session.driver_heading()
 	add_child(camera)
 	camera.make_current()
 
@@ -84,11 +85,16 @@ func _process(_dt: float) -> void:
 
 ## Puts the robot and the game pieces back and starts a new match.
 func _reset() -> void:
-	robot.reset_pose(START_POSITION, 0.0)
+	_place_robot()
 	if pieces:
 		pieces.reset()
 	if game:
-		game.start()
+		game.start(Session.match_seconds, Session.free_practice)
+
+
+func _place_robot() -> void:
+	var start := Session.start_pose()
+	robot.reset_pose(Vector2(start.x, start.y), start.z)
 
 
 ## The human player drops a coral into the station nearest the robot.

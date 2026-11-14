@@ -7,12 +7,15 @@ enum Mode { DRIVER_STATION, FOLLOW, TOP, ORBIT }
 
 const MODE_NAMES := ["Driver station", "Follow", "Top", "Orbit"]
 const _ORBIT_SENSITIVITY := 0.008
-# Driver's eyes behind the middle blue driver station, in field coordinates.
-const _STATION_EYE := Vector3(-0.8, 0.5 * Frc.FIELD_WIDTH, 1.65)
+# How far behind the alliance wall, and how high, the driver's eyes are.
+const _STATION_SETBACK := 0.8
+const _EYE_HEIGHT := 1.65
 const _FIELD_CENTER := Vector3(0.5 * Frc.FIELD_LENGTH, 0.5 * Frc.FIELD_WIDTH, 0.3)
 
 var mode := Mode.DRIVER_STATION
 var target: Node3D
+## Field heading the driver looks along: 0 from the blue wall, PI from the red.
+var driver_heading := 0.0
 
 var _orbit_yaw := deg_to_rad(70.0)
 var _orbit_pitch := deg_to_rad(15.0)
@@ -41,20 +44,23 @@ func _process(dt: float) -> void:
 	if target == null:
 		return
 	var robot := target.global_position
+	# Unit vector away from the driver, in Godot coordinates.
+	var downfield := Frc.to_godot(Vector3(cos(driver_heading), sin(driver_heading), 0.0))
 	match mode:
 		Mode.DRIVER_STATION:
 			fov = 60.0
-			global_position = Frc.to_godot(_STATION_EYE)
+			var wall_x := -_STATION_SETBACK if cos(driver_heading) > 0.0 else Frc.FIELD_LENGTH + _STATION_SETBACK
+			global_position = Frc.to_godot(Vector3(wall_x, 0.5 * Frc.FIELD_WIDTH, _EYE_HEIGHT))
 			look_at(Frc.to_godot(_FIELD_CENTER).lerp(robot, 0.5), Vector3.UP)
 		Mode.FOLLOW:
 			fov = 70.0
-			var desired := robot + Vector3(-3.2, 2.4, 0.0)
+			var desired := robot - downfield * 3.2 + Vector3(0.0, 2.4, 0.0)
 			global_position = global_position.lerp(desired, 1.0 - exp(-8.0 * dt))
-			look_at(robot + Vector3(0.8, 0.2, 0.0), Vector3.UP)
+			look_at(robot + downfield * 0.8 + Vector3(0.0, 0.2, 0.0), Vector3.UP)
 		Mode.TOP:
 			fov = 70.0
 			global_position = robot + Vector3(0.0, 9.0, 0.0)
-			look_at(robot, Vector3.RIGHT)
+			look_at(robot, downfield)
 		Mode.ORBIT:
 			fov = 60.0
 			var focus := robot + Vector3(0.0, 0.9, 0.0)
