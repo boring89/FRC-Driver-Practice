@@ -1,0 +1,43 @@
+{
+  "name": "Placeholder swerve",
+  "mass_kg": 63.5,
+  "inertia_kgm2": {"roll": 3.0, "pitch": 3.0, "yaw": 5.5},
+  "com_m": [0.0, 0.0, 0.18],
+  "frame_m": [0.699, 0.699],
+  "ground_clearance_m": 0.04,
+  "bumper_thickness_m": 0.083,
+  "bumper_zone_m": [0.03, 0.16],
+  "battery": {"open_circuit_v": 12.6, "resistance_ohm": 0.02, "quiescent_a": 3.0},
+  "driver": {"max_speed_mps": 5.0, "max_omega_radps": 9.0},
+  "swerve": {
+    "module_positions_m": [[0.273, 0.273], [0.273, -0.273], [-0.273, 0.273], [-0.273, -0.273]],
+    "wheel_radius_m": 0.0508,
+    "wheel_inertia_kgm2": 4.0e-4,
+    "drive": {
+      "motor": "kraken_x60",
+      "gearing": 6.12,
+      "stator_limit_a": 80.0,
+      "supply_limit_a": 60.0,
+      "friction_nm": 0.15,
+      "kp_v_per_mps": 0.0
+    },
+    "steer": {
+      "motor": "kraken_x44",
+      "gearing": 21.43,
+      "stator_limit_a": 40.0,
+      "supply_limit_a": 30.0,
+      "inertia_kgm2": 0.005,
+      "friction_nm": 0.1,
+      "kp_v_per_rad": 60.0,
+      "kd_v_per_radps": 0.5
+    },
+    "tire": {
+      "mu_static": 1.15,
+      "mu_kinetic": 0.95,
+      "stribeck_speed_mps": 0.5,
+      "slip_speed_min_mps": 0.1,
+      "slip_fraction": 0.1,
+      "scrub_radius_m": 0.012
+    }
+  }
+}

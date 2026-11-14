@@ -1,0 +1,13 @@
+{
+  "_source": "Voltage, torque, current and speed are WPILib DCMotor constants (v2026.2.1). Rotor inertias are estimates.",
+  "kraken_x60": {"nominal_voltage": 12.0, "stall_torque_nm": 7.09, "stall_current_a": 366.0, "free_current_a": 2.0, "free_speed_rpm": 6000.0, "rotor_inertia_kgm2": 6.0e-5},
+  "kraken_x60_foc": {"nominal_voltage": 12.0, "stall_torque_nm": 9.37, "stall_current_a": 483.0, "free_current_a": 2.0, "free_speed_rpm": 5800.0, "rotor_inertia_kgm2": 6.0e-5},
+  "kraken_x44": {"nominal_voltage": 12.0, "stall_torque_nm": 4.11, "stall_current_a": 279.0, "free_current_a": 2.0, "free_speed_rpm": 7758.0, "rotor_inertia_kgm2": 3.0e-5},
+  "kraken_x44_foc": {"nominal_voltage": 12.0, "stall_torque_nm": 5.01, "stall_current_a": 329.0, "free_current_a": 2.0, "free_speed_rpm": 7368.0, "rotor_inertia_kgm2": 3.0e-5},
+  "falcon_500": {"nominal_voltage": 12.0, "stall_torque_nm": 4.69, "stall_current_a": 257.0, "free_current_a": 1.5, "free_speed_rpm": 6380.0, "rotor_inertia_kgm2": 5.0e-5},
+  "falcon_500_foc": {"nominal_voltage": 12.0, "stall_torque_nm": 5.84, "stall_current_a": 304.0, "free_current_a": 1.5, "free_speed_rpm": 6080.0, "rotor_inertia_kgm2": 5.0e-5},
+  "neo": {"nominal_voltage": 12.0, "stall_torque_nm": 2.6, "stall_current_a": 105.0, "free_current_a": 1.8, "free_speed_rpm": 5676.0, "rotor_inertia_kgm2": 4.0e-5},
+  "neo_vortex": {"nominal_voltage": 12.0, "stall_torque_nm": 3.6, "stall_current_a": 211.0, "free_current_a": 3.6, "free_speed_rpm": 6784.0, "rotor_inertia_kgm2": 5.0e-5},
+  "neo_550": {"nominal_voltage": 12.0, "stall_torque_nm": 0.97, "stall_current_a": 100.0, "free_current_a": 1.4, "free_speed_rpm": 11000.0, "rotor_inertia_kgm2": 5.0e-6},
+  "minion": {"nominal_voltage": 12.0, "stall_torque_nm": 3.17, "stall_current_a": 211.0, "free_current_a": 2.0, "free_speed_rpm": 7704.0, "rotor_inertia_kgm2": 3.0e-5}
+}

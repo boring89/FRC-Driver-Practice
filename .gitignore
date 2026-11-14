@@ -1,0 +1,12 @@
+# Godot
+.godot/
+*.translation
+
+# Local tools (Godot binary is downloaded here, not committed)
+tools/
+
+# Secrets (Onshape API keys)
+.env
+
+# Generated CAD exports
+cad/export/
