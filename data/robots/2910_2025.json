@@ -114,10 +114,17 @@
   "controls": {
     "stow": "stow",
     "climb": ["climb_collect", "climb_lock"],
-    "coral": {"l1": "l1", "l2": "l2", "l3": "l3", "l4": "l4", "intake": "ground_coral", "special": "station_coral"},
-    "algae": {"l1": "processor_algae", "l2": "l2_algae_front", "l3": "l3_algae_front", "l4": "net_algae", "intake": "ground_algae", "special": "hp_algae"},
-    "reverse_place": ["l1"],
-    "align_standoff_m": {"default": 0.03, "l2": 0.08, "l3": 0.02, "l4": 0.0}
+    "coral": {
+      "l1": "l1", "l2": "l2", "l3": "l3", "l4": "l4", "intake": "ground_coral", "special": "station_coral",
+      "back": {"l2": "l2_back", "l3": "l3_back", "l4": "l4_back"}
+    },
+    "algae": {
+      "l1": "processor_algae", "l2": "l2_algae_front", "l3": "l3_algae_front", "l4": "net_algae", "intake": "ground_algae", "special": "hp_algae",
+      "back": {"l2": "l2_algae_back", "l3": "l3_algae_back"}
+    },
+    "reverse_place": ["l1", "l2_back", "l3_back", "l4_back"],
+    "back_to_reef": ["l2_back", "l3_back", "l4_back", "l2_algae_back", "l3_algae_back"],
+    "align_standoff_m": {"default": 0.03, "l2": 0.08, "l3": 0.02, "l4": 0.0, "l2_back": 0.15, "l3_back": 0.15, "l4_back": 0.15}
   },
   "intake": {
     "link": "intake",

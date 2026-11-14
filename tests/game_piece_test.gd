@@ -92,18 +92,25 @@ func _run() -> void:
 	var presets := {}
 	for preset: Dictionary in robot.superstructure.presets:
 		presets[preset["name"]] = preset
-	# Level, gap between bumper and reef face, and the height band a coral
-	# hanging on that level's branch rests in.
-	for shot: Array in [["l4", 0.0, 1.6, 1.8], ["l3", 0.02, 1.05, 1.2], ["l2", 0.08, 0.65, 0.8]]:
+	# Preset, gap between bumper and reef face, and the height band a coral
+	# hanging on that level's branch rests in. The back poses score tail to the
+	# reef, with the coral leaving by the intake's mouth.
+	var standoffs: Dictionary = robot.config["controls"]["align_standoff_m"]
+	for shot: Array in [
+		["l4", 1.6, 1.8], ["l3", 1.05, 1.2], ["l2", 0.65, 0.8],
+		["l4_back", 1.6, 1.8], ["l3_back", 1.05, 1.2], ["l2_back", 0.65, 0.8],
+	]:
+		var backward: bool = robot.config["controls"]["back_to_reef"].has(shot[0])
+		var gap: float = standoffs[shot[0]]
 		var half_length := 0.5 * float(robot.config["frame_m"][0]) + float(robot.config["bumper_thickness_m"])
-		robot.reset_pose(Vector2(REEF_FACE_X - half_length - float(shot[1]), BRANCH_Y), 0.0)
+		robot.reset_pose(Vector2(REEF_FACE_X - half_length - gap, BRANCH_Y), PI if backward else 0.0)
 		await _wait(0.5)
 		var scored := pieces.spawn(GamePiece.CORAL)
 		scored.global_position = robot.global_position + Vector3(0.0, 0.5, 0.0)
 		robot.intake.load_piece(scored)
 		robot.superstructure.go_to(presets[shot[0]])
 		await _wait(2.0)
-		robot.intake.command = -1.0
+		robot.intake.command = -2.0 if backward else -1.0
 		await _wait(0.1)
 		robot.intake.command = 0.0
 		await _wait(1.0)
@@ -111,10 +118,34 @@ func _run() -> void:
 		await _wait(2.0)
 		var rest := Frc.from_godot(scored.global_position)
 		print("%s from %.2f m back: coral rests %.3f m past the reef face at height %.3f m" % [
-			shot[0], shot[1], rest.x - REEF_FACE_X, rest.z])
-		_check("coral stays on the %s branch" % shot[0],
-				rest.z > float(shot[2]) and rest.z < float(shot[3]) and absf(rest.y - BRANCH_Y) < 0.05)
+			shot[0], gap, rest.x - REEF_FACE_X, rest.z])
+		_check("coral stays on the branch with %s" % shot[0],
+				rest.z > float(shot[1]) and rest.z < float(shot[2]) and absf(rest.y - BRANCH_Y) < 0.05)
 		scored.queue_free()
+
+	print("\n== Choosing poses and branches ==")
+	var chooser := DriverInput.new()
+	chooser.robot = robot
+	chooser.reef_align = ReefAlign.new(
+			JSON.parse_string(FileAccess.get_file_as_string("res://data/fields/%d.json" % YEAR))["reefs"])
+	root.add_child(chooser)
+	chooser.set_physics_process(false)
+	robot.superstructure.go_to(presets["stow"])
+	# In front of the reef face nearest the blue wall, then round the far side.
+	robot.reset_pose(Vector2(2.6, BRANCH_Y), 0.0)
+	_check("nose to the reef picks the front pose", chooser.level_preset("l4") == "l4")
+	_check("left branch on the near side is to the driver's left",
+			absf(chooser.align_target(1.0).y - BRANCH_Y) < 0.01)
+	robot.reset_pose(Vector2(2.6, BRANCH_Y), PI)
+	_check("tail to the reef picks the back pose", chooser.level_preset("l4") == "l4_back")
+	_check("a level without a back pose stays nose-first", chooser.level_preset("l1") == "l1")
+	robot.reset_pose(Vector2(6.4, BRANCH_Y), PI)
+	_check("nose to the reef from the far side picks the front pose", chooser.level_preset("l4") == "l4")
+	var far := chooser.align_target(1.0)
+	print("far-side left target (%.3f, %.3f), heading %.0f deg" % [far.x, far.y, rad_to_deg(far.z)])
+	_check("left branch on the far side is still to the driver's left", absf(far.y - BRANCH_Y) < 0.01)
+	_check("far-side target is beyond the reef", far.x > 5.3)
+	chooser.queue_free()
 
 	print("\n== Auto-align, then score ==")
 	var driver := DriverInput.new()
@@ -125,11 +156,12 @@ func _run() -> void:
 	# Only its align target is under test; keep it from overwriting the command.
 	driver.set_physics_process(false)
 	robot.reset_pose(Vector2(2.2, BRANCH_Y + 0.7), 0.4)
-	robot.superstructure.go_to(presets["l4"])
+	robot.superstructure.go_to(presets["l4_back"])
 	var aligned := pieces.spawn(GamePiece.CORAL)
 	aligned.global_position = robot.global_position + Vector3(0.0, 0.5, 0.0)
 	robot.intake.load_piece(aligned)
-	# A robot facing this reef face looks along +x, so its left is the higher-y branch.
+	# Looking at this reef face means looking along +x, so the left branch is the
+	# higher-y one; the back pose has the robot facing away, along -x.
 	var goal := driver.align_target(1.0)
 	for tick in int(2.5 * Engine.physics_ticks_per_second):
 		var pose := Frc.from_godot(robot.global_position)
@@ -141,8 +173,9 @@ func _run() -> void:
 	print("stopped %.3f m and %.1f deg from the scoring spot at (%.3f, %.3f)" % [
 		miss, rad_to_deg(absf(angle_difference(robot.yaw(), goal.z))), goal.x, goal.y])
 	_check("reaches the scoring spot", miss < 0.03 and absf(angle_difference(robot.yaw(), goal.z)) < deg_to_rad(2.0))
-	_check("picked the branch on the robot's left", absf(goal.y - BRANCH_Y) < 0.01)
-	robot.intake.command = -1.0
+	_check("picked the left branch", absf(goal.y - BRANCH_Y) < 0.01)
+	_check("turned its back to the reef", absf(angle_difference(robot.yaw(), PI)) < deg_to_rad(2.0))
+	robot.intake.command = -2.0
 	await _wait(0.1)
 	robot.intake.command = 0.0
 	await _wait(1.0)

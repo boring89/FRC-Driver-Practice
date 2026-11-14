@@ -22,7 +22,7 @@ tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path .
 |---|---|---|
 | 移動 | W A S D | 左搖桿 |
 | 旋轉 | J / L | 右搖桿 |
-| 自動對位左 / 右樹枝 | Q / E | LB / RB |
+| 自動對位左 / 右樹枝（駕駛視角） | Q / E | LB / RB |
 | L1 / L2 / L3 / L4 | U / I / O / P | A / B / X / Y |
 | Intake（按住吸入，並切到吸取姿勢） | Shift | LT |
 | Place（送出得分） | K | RT |
@@ -37,6 +37,9 @@ tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path .
 | 重置 | R | Start |
 
 Esc 回標題選單。每個按鍵在各模式下對應哪個姿勢，寫在機器人設定檔的 `controls` 區塊。
+按 L1–L4 時會看車頭朝向：車頭朝著最近的 reef 就用正面姿勢，車尾朝著 reef 且機器人有對應的
+背向姿勢（`controls.<模式>.back`）就用背向姿勢；自動對位會維持那個朝向。
+自動對位的左右以駕駛看出去的方向為準，所以 reef 背面的左右和面對那一面時相反。
 
 按 Tab 開啟姿勢編輯器：用滑桿直接擺每個關節，右鍵拖曳環繞視角、滾輪縮放，
 「Save preset」會把目前姿勢存進該機器人的預設姿勢檔（`data/robots/*_presets.json`）。
