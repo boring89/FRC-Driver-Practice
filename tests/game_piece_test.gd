@@ -123,6 +123,60 @@ func _run() -> void:
 				rest.z > float(shot[1]) and rest.z < float(shot[2]) and absf(rest.y - BRANCH_Y) < 0.05)
 		scored.queue_free()
 
+	print("\n== Scoring ==")
+	for piece in pieces.get_children():
+		piece.queue_free()
+	await _wait(0.1)
+	var field: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/fields/%d.json" % YEAR))
+	var game := Match.new(field, pieces)
+	root.add_child(game)
+	game.start()
+	# A coral scored by the robot itself: nose-first on L4 of the blue reef.
+	robot.reset_pose(Vector2(REEF_FACE_X - 0.425, BRANCH_Y), 0.0)
+	await _wait(0.5)
+	var counted := pieces.spawn(GamePiece.CORAL)
+	counted.global_position = robot.global_position + Vector3(0.0, 0.5, 0.0)
+	robot.intake.load_piece(counted)
+	robot.superstructure.go_to(presets["l4"])
+	await _wait(2.0)
+	_check("a coral still in the intake scores nothing", game.scores["blue"] == 0)
+	robot.intake.command = -1.0
+	await _wait(0.1)
+	robot.intake.command = 0.0
+	await _wait(1.0)
+	robot.superstructure.go_to(presets["stow"])
+	await _wait(2.0)
+	print("after an L4: blue %d, red %d" % [game.scores["blue"], game.scores["red"]])
+	_check("L4 coral is worth 5", game.scores["blue"] == 5 and game.scores["red"] == 0)
+	# The rest placed by hand: L3 and L2 on the same blue branch column, a
+	# coral in the red reef's trough, algae in the net and through a processor.
+	for spot: Vector3 in [
+		Vector3(REEF_FACE_X + 0.135, BRANCH_Y, 1.105), Vector3(REEF_FACE_X + 0.135, BRANCH_Y, 0.705),
+		Vector3(13.059 + 0.5, 4.026, 0.5),
+	]:
+		var placed := pieces.spawn(GamePiece.CORAL)
+		placed.global_position = Frc.to_godot(spot)
+		placed.freeze = true
+	var netted := pieces.spawn(GamePiece.ALGAE)
+	netted.global_position = Frc.to_godot(Vector3(0.5 * Frc.FIELD_LENGTH, 6.0, 2.0))
+	netted.freeze = true
+	var processed := pieces.spawn(GamePiece.ALGAE)
+	processed.global_position = Frc.to_godot(Vector3(5.988, -0.3, 0.3))
+	processed.freeze = true
+	await _wait(0.3)
+	print("after placing the rest: blue %d, red %d" % [game.scores["blue"], game.scores["red"]])
+	_check("blue has L4 + L3 + L2 + net + processor", game.scores["blue"] == 5 + 4 + 3 + 4 + 6)
+	_check("red has one trough coral", game.scores["red"] == 2)
+	_check("processed algae leaves the field", not is_instance_valid(processed) or processed.is_queued_for_deletion())
+	counted.global_position += Vector3(0.0, 0.0, 2.0)
+	counted.freeze = true
+	await _wait(0.3)
+	_check("a coral knocked off its branch stops counting", game.scores["blue"] == 4 + 3 + 4 + 6)
+	game.time_left = 0.2
+	await _wait(0.5)
+	_check("the match ends when the clock runs out", not game.running and game.time_left == 0.0)
+	game.queue_free()
+
 	print("\n== Choosing poses and branches ==")
 	var chooser := DriverInput.new()
 	chooser.robot = robot

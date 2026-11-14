@@ -41,6 +41,12 @@ Esc 回標題選單。每個按鍵在各模式下對應哪個姿勢，寫在機�
 背向姿勢（`controls.<模式>.back`）就用背向姿勢；自動對位會維持那個朝向。
 自動對位的左右以駕駛看出去的方向為準，所以 reef 背面的左右和面對那一面時相反。
 
+畫面上只有底部的比分和比賽時間。每場 2:15（teleop），最後 20 秒是 endgame，時間到機器人會停止回應，
+按重置開始新的一場。分數依場上當下的狀態計算：coral 掛在 reef 樹枝上 L2 / L3 / L4 各 3 / 4 / 5 分
+（每根樹枝只算一個）、躺在 trough 裡 2 分，algae 停在 net 裡 4 分、送出 processor 6 分。
+藍方 reef 算藍方的分數，紅方 reef 算紅方。分數和位置寫在 `data/fields/<年份>.json` 的 `match` 區塊。
+按 F3 顯示除錯資訊（速度、電池、關節角度、鍵位提示）。
+
 按 Tab 開啟姿勢編輯器：用滑桿直接擺每個關節，右鍵拖曳環繞視角、滾輪縮放，
 「Save preset」會把目前姿勢存進該機器人的預設姿勢檔（`data/robots/*_presets.json`）。
 
@@ -106,6 +112,7 @@ tools/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --fixed-fps 240
 - `sim/physics/`：馬達與電池模型
 - `sim/robot/`：swerve 模組、底盤、驅動控制、機構（關節與上層結構）
 - `sim/field/`：場地（CAD 場地與替代場地）、遊戲物件
+- `sim/match/`：比賽計時與計分
 - `sim/menu/`：標題選單與設定畫面；`sim/settings.gd` 是設定的讀寫與套用
 - `data/fields/`：每年場地的處理設定（座標、要移除的遊戲物件、材質）
 - `scripts/`：Onshape 匯出與 Blender 場地建置

@@ -9,6 +9,9 @@ var robot := SwerveRobot.new()
 var camera := CameraRig.new()
 ## Null when the field has no game piece data.
 var pieces: GamePieces
+## Null when the field has no scoring rules.
+var game: Match
+var driver := DriverInput.new()
 
 
 func _ready() -> void:
@@ -28,13 +31,16 @@ func _ready() -> void:
 	add_child(robot)
 	robot.reset_pose(START_POSITION, 0.0)
 
-	var driver := DriverInput.new()
 	driver.robot = robot
 	var field_config := "res://data/fields/%d.json" % Session.year
 	if FileAccess.file_exists(field_config):
 		var field: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(field_config))
 		if field.has("reefs"):
 			driver.reef_align = ReefAlign.new(field["reefs"])
+		if field.has("match") and pieces:
+			game = Match.new(field, pieces)
+			add_child(game)
+			game.start()
 	add_child(driver)
 
 	camera.target = robot
@@ -46,6 +52,11 @@ func _ready() -> void:
 	hud.camera = camera
 	hud.driver = driver
 	add_child(hud)
+
+	if game:
+		var scoreboard := Scoreboard.new()
+		scoreboard.game = game
+		add_child(scoreboard)
 
 	var pose_editor := PoseEditor.new()
 	pose_editor.robot = robot
@@ -66,10 +77,18 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_tree().change_scene_to_file(TITLE_SCENE)
 
 
+func _process(_dt: float) -> void:
+	# The robot is disabled when the match clock runs out, as on a real field.
+	driver.enabled = game == null or game.running
+
+
+## Puts the robot and the game pieces back and starts a new match.
 func _reset() -> void:
 	robot.reset_pose(START_POSITION, 0.0)
 	if pieces:
 		pieces.reset()
+	if game:
+		game.start()
 
 
 ## The human player drops a coral into the station nearest the robot.

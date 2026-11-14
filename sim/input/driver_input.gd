@@ -15,6 +15,8 @@ var robot: SwerveRobot
 var reef_align: ReefAlign
 var algae_mode := false
 var speed_scale := 1.0
+## False once the match is over: the robot stops answering the driver.
+var enabled := true
 
 var _climb_step := 0
 # Reef level the driver last asked for ("l1".."l4"), or "" after anything else.
@@ -23,6 +25,11 @@ var _level := ""
 
 func _physics_process(_dt: float) -> void:
 	if robot == null:
+		return
+	if not enabled:
+		robot.command = Vector3.ZERO
+		if robot.intake:
+			robot.intake.command = 0.0
 		return
 	var translate := Vector2.ZERO
 	var turn := 0.0
@@ -89,7 +96,7 @@ func align_target(side: float) -> Vector3:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if robot == null or robot.superstructure == null:
+	if robot == null or robot.superstructure == null or not enabled:
 		return
 	var controls := _controls()
 	var mode: Dictionary = controls.get("algae" if algae_mode else "coral", {})

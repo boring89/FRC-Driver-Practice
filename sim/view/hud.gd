@@ -1,6 +1,7 @@
 class_name Hud
 extends CanvasLayer
-## On-screen telemetry and a reminder of the controls, as currently bound.
+## Debug overlay, hidden until F3: telemetry and a reminder of the controls as
+## currently bound.
 
 var robot: SwerveRobot
 var camera: CameraRig
@@ -10,6 +11,7 @@ var _label := Label.new()
 
 
 func _ready() -> void:
+	visible = false
 	_label.position = Vector2(16.0, 12.0)
 	_label.add_theme_font_size_override("font_size", 18)
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
@@ -17,8 +19,14 @@ func _ready() -> void:
 	add_child(_label)
 
 
+func _unhandled_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if key and key.pressed and not key.echo and key.physical_keycode == KEY_F3:
+		visible = not visible
+
+
 func _process(_dt: float) -> void:
-	if robot == null:
+	if robot == null or not visible:
 		return
 	var slips := PackedStringArray()
 	for m in robot.modules:

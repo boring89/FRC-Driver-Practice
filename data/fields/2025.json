@@ -3,6 +3,16 @@
   "half_length_m": 8.774,
   "half_width_m": 4.026,
   "reefs": {"centers_m": [[4.489, 4.026], [13.059, 4.026]], "face_distance_m": 0.832, "branch_offset_m": 0.1643},
+  "match": {
+    "seconds": 135,
+    "endgame_seconds": 20,
+    "reef_alliances": ["blue", "red"],
+    "coral_points": {"l1": 2, "l2": 3, "l3": 4, "l4": 5},
+    "branch_rest_m": {"l2": [0.135, 0.705], "l3": [0.135, 1.105], "l4": [0.066, 1.689]},
+    "trough": {"radius_m": 0.8, "heights_m": [0.42, 0.62]},
+    "net": {"points": 4, "half_depth_m": 0.7, "min_height_m": 1.5},
+    "processor": {"points": 6, "half_width_m": 0.45, "max_height_m": 1.0, "at_m": {"blue": [5.988, 0.0], "red": [11.56, 8.052]}}
+  },
   "min_part_size_m": 0.06,
   "collision": {
     "min_part_size_m": 0.08,
