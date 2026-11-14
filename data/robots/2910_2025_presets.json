@@ -1,0 +1,9 @@
+[
+  {"name":"stow","button":"a","positions":{"arm":0.0,"extension":0.0,"wrist":0.0}},
+  {"name":"station","button":"b","positions":{"arm":50.0,"extension":0.0,"wrist":20.0}},
+  {"name":"ground","button":"x","positions":{"arm":0.0,"extension":0.25,"wrist":-100.0}},
+  {"name":"l1","button":"dpad_down","positions":{"arm":22.0,"extension":0.05,"wrist":-40.0}},
+  {"name":"l2","button":"dpad_left","positions":{"arm":40.0,"extension":0.185,"wrist":-40.0}},
+  {"name":"l3","button":"dpad_up","positions":{"arm":58.0,"extension":0.425,"wrist":-58.0}},
+  {"name":"l4","button":"y","positions":{"arm":70.0,"extension":0.96,"wrist":-70.0}}
+]

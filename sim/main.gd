@@ -34,6 +34,11 @@ func _ready() -> void:
 	hud.camera = camera
 	add_child(hud)
 
+	var pose_editor := PoseEditor.new()
+	pose_editor.robot = robot
+	pose_editor.camera = camera
+	add_child(pose_editor)
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	var key := event as InputEventKey

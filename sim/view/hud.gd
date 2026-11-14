@@ -41,7 +41,7 @@ func _process(_dt: float) -> void:
 			names.append(preset["name"])
 		lines.append("%s    [%s]" % ["   ".join(joints), superstructure.preset_name])
 		lines.append("")
-		lines.append("Number keys / buttons: %s" % "  ".join(names))
+		lines.append("Number keys / buttons: %s    Tab: pose editor" % "  ".join(names))
 	lines.append_array([
 		"",
 		"Left stick / WASD: move    Right stick / Q E: turn",

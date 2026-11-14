@@ -31,6 +31,8 @@ class Link:
 var joints: Array[MechanismJoint] = []
 var presets: Array = []
 var preset_name := ""
+## Off while posing by hand, so each joint goes straight where it is told.
+var sequencing := true
 
 # Optional rule that keeps a telescope pulled in while the arm carrying it swings.
 var _slide: MechanismJoint
@@ -39,6 +41,7 @@ var _retracted := 0.0
 var _swing_tolerance := 0.0
 # Where each joint was last asked to go, before sequencing holds any of them back.
 var _requested := {}
+var _presets_path := ""
 
 var _links: Array[Link] = []
 var _chassis_mass := 0.0
@@ -56,7 +59,10 @@ func setup(cfg: Dictionary, model: Node, meta: Dictionary, body: RigidBody3D) ->
 		joint.parent = by_name.get(joint_cfg.get("parent", ""))
 		by_name[joint.name] = joint
 		joints.append(joint)
-	presets = cfg.get("presets", [])
+	# Presets live in their own file so the pose editor can rewrite it.
+	_presets_path = cfg.get("presets", "")
+	if _presets_path != "":
+		presets = JSON.parse_string(FileAccess.get_file_as_string(_presets_path))
 	if cfg.has("sequence"):
 		var sequence: Dictionary = cfg["sequence"]
 		_slide = by_name[sequence["slide"]]
@@ -110,6 +116,32 @@ func go_to(preset: Dictionary) -> void:
 		joint.set_goal(_requested[joint])
 
 
+## Sends one joint to `value` (radians or metres), leaving the others alone.
+func set_manual(joint: MechanismJoint, value: float) -> void:
+	preset_name = ""
+	_requested[joint] = clampf(value, joint.min_position, joint.max_position)
+
+
+## Stores the current requested pose as preset `name` (replacing one of that
+## name, or adding it) and writes the presets file.
+func save_preset(name: String) -> void:
+	var positions := {}
+	for joint in joints:
+		var value := requested(joint)
+		positions[joint.name] = snappedf(value, 0.001) if joint.prismatic else snappedf(rad_to_deg(value), 0.1)
+	var existing := presets.filter(func(preset: Dictionary) -> bool: return preset["name"] == name)
+	if existing.is_empty():
+		presets.append({"name": name, "positions": positions})
+	else:
+		existing[0]["positions"] = positions
+	preset_name = name
+	var rows := PackedStringArray()
+	for preset: Dictionary in presets:
+		rows.append("  " + JSON.stringify(preset, "", false))
+	var file := FileAccess.open(_presets_path, FileAccess.WRITE)
+	file.store_string("[\n" + ",\n".join(rows) + "\n]\n")
+
+
 ## Where `joint` was last asked to go (its goal may lag while sequencing).
 func requested(joint: MechanismJoint) -> float:
 	return _requested.get(joint, joint.goal)
@@ -136,7 +168,11 @@ func update_controllers(period: float, body: RigidBody3D) -> void:
 ## Retract, swing, extend: while the arm still has far to go the telescope
 ## pulls in, and the arm waits for it before moving.
 func _sequence_goals() -> void:
-	if _slide == null or _requested.is_empty():
+	if _requested.is_empty():
+		return
+	if _slide == null or not sequencing:
+		for joint in joints:
+			joint.set_goal(requested(joint))
 		return
 	if absf(_swing.position - _requested[_swing]) <= _swing_tolerance:
 		_slide.set_goal(_requested[_slide])

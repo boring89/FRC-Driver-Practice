@@ -19,6 +19,9 @@ tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path .
 左搖桿 / WASD 移動，右搖桿 / Q E 旋轉，Start / R 重置，Back / C 切換視角。
 機構預設姿勢用數字鍵（依設定檔裡的順序）或設定檔指定的手把按鍵切換。
 
+按 Tab 開啟姿勢編輯器：用滑桿直接擺每個關節，右鍵拖曳環繞視角、滾輪縮放，
+「Save preset」會把目前姿勢存進該機器人的預設姿勢檔（`data/robots/*_presets.json`）。
+
 ## 場地（從 Onshape CAD 建置）
 
 場地模型不進版控，要從 Onshape 匯出後在 Blender 處理一次。金鑰放在 `.env`

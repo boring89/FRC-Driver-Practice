@@ -28,14 +28,16 @@ func _physics_process(_dt: float) -> void:
 		translate = Vector2(-Input.get_joy_axis(pad, JOY_AXIS_LEFT_Y), -Input.get_joy_axis(pad, JOY_AXIS_LEFT_X))
 		turn = -Input.get_joy_axis(pad, JOY_AXIS_RIGHT_X)
 
-	var keys := Vector2(
-			float(Input.is_physical_key_pressed(KEY_W)) - float(Input.is_physical_key_pressed(KEY_S)),
-			float(Input.is_physical_key_pressed(KEY_A)) - float(Input.is_physical_key_pressed(KEY_D)))
-	if keys != Vector2.ZERO:
-		translate = keys.normalized()
-	var key_turn := float(Input.is_physical_key_pressed(KEY_Q)) - float(Input.is_physical_key_pressed(KEY_E))
-	if key_turn != 0.0:
-		turn = key_turn
+	# Typing in a text box must not drive the robot.
+	if not get_viewport().gui_get_focus_owner() is LineEdit:
+		var keys := Vector2(
+				float(Input.is_physical_key_pressed(KEY_W)) - float(Input.is_physical_key_pressed(KEY_S)),
+				float(Input.is_physical_key_pressed(KEY_A)) - float(Input.is_physical_key_pressed(KEY_D)))
+		if keys != Vector2.ZERO:
+			translate = keys.normalized()
+		var key_turn := float(Input.is_physical_key_pressed(KEY_Q)) - float(Input.is_physical_key_pressed(KEY_E))
+		if key_turn != 0.0:
+			turn = key_turn
 
 	translate = _shape(translate)
 	turn = _shape(Vector2(turn, 0.0)).x
