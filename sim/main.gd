@@ -1,7 +1,8 @@
 extends Node3D
 ## Practice session: one field, one robot, one driver.
 
-const ROBOT_CONFIG := "res://data/robots/placeholder_swerve.json"
+const ROBOT_CONFIG := "res://data/robots/2910_2025.json"
+const FIELD_YEAR := 2025
 const START_POSITION := Vector2(1.6, 2.0)
 
 var robot := SwerveRobot.new()
@@ -10,7 +11,11 @@ var camera := CameraRig.new()
 
 func _ready() -> void:
 	_build_lighting()
-	add_child(PlaceholderField.new())
+	# The CAD field only exists once scripts/build_field.py has been run.
+	if ResourceLoader.exists(CadField.asset_path(FIELD_YEAR)):
+		add_child(CadField.new(FIELD_YEAR))
+	else:
+		add_child(PlaceholderField.new())
 
 	robot.setup(SwerveRobot.load_config(ROBOT_CONFIG), Color(0.1, 0.25, 0.85))
 	add_child(robot)
@@ -54,6 +59,8 @@ func _build_lighting() -> void:
 	sun.rotation_degrees = Vector3(-60.0, -35.0, 0.0)
 	sun.light_energy = 1.1
 	sun.shadow_enabled = true
+	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
+	sun.directional_shadow_max_distance = 30.0
 	add_child(sun)
 
 	var sky := Sky.new()

@@ -10,3 +10,12 @@ tools/
 
 # Generated CAD exports
 cad/export/
+
+# Field meshes are rebuilt from Onshape by scripts/build_field.py
+assets/fields/*/field.glb
+
+# Robot meshes are rebuilt from Onshape exports by scripts/build_robot.py
+assets/robots/*/robot.glb
+
+# Python
+__pycache__/

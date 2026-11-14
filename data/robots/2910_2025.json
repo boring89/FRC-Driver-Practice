@@ -1,0 +1,65 @@
+{
+  "name": "2910 Jack in the Bot (2025)",
+  "mass_kg": 63.5,
+  "inertia_kgm2": {"roll": 3.0, "pitch": 3.5, "yaw": 5.5},
+  "com_m": [0.0, 0.0, 0.18],
+  "frame_m": [0.711, 0.660],
+  "ground_clearance_m": 0.03,
+  "bumper_thickness_m": 0.07,
+  "bumper_zone_m": [0.02, 0.164],
+  "battery": {"open_circuit_v": 12.6, "resistance_ohm": 0.02, "quiescent_a": 3.0},
+  "driver": {"max_speed_mps": 4.7, "max_omega_radps": 9.0},
+  "swerve": {
+    "module_positions_m": [[0.289, 0.2635], [0.289, -0.2635], [-0.289, 0.2635], [-0.289, -0.2635]],
+    "wheel_radius_m": 0.0508,
+    "wheel_inertia_kgm2": 4.0e-4,
+    "drive": {
+      "motor": "kraken_x60",
+      "gearing": 6.75,
+      "stator_limit_a": 80.0,
+      "supply_limit_a": 60.0,
+      "friction_nm": 0.15,
+      "kp_v_per_mps": 0.0
+    },
+    "steer": {
+      "motor": "kraken_x60",
+      "gearing": 21.43,
+      "stator_limit_a": 40.0,
+      "supply_limit_a": 30.0,
+      "inertia_kgm2": 0.005,
+      "friction_nm": 0.1,
+      "kp_v_per_rad": 60.0,
+      "kd_v_per_radps": 0.5
+    },
+    "tire": {
+      "mu_static": 1.15,
+      "mu_kinetic": 0.95,
+      "stribeck_speed_mps": 0.5,
+      "slip_speed_min_mps": 0.1,
+      "slip_fraction": 0.1,
+      "scrub_radius_m": 0.012
+    }
+  },
+  "model": "res://assets/robots/2910_2025",
+  "cad": {
+    "forward": "-y",
+    "left": "+x",
+    "min_part_size_m": 0.02,
+    "triangles_per_m2": 30000,
+    "drop": ["[Ss]crew", "^Bearing", "Shim", "Spacer", "Washer", "[Nn]ut\\b", "Rivet", "Grommet", "[Pp]in\\b", "Origin Cube", "^9\\d{4}[AK]\\d+", "magnet", "CANcoder PCA"],
+    "module": {
+      "match": "SDS MK4i Swerve Module",
+      "tread": "Tread,",
+      "wheel": ["Wheel, SDS", "Tread,", "Bevel Gear, 4515"],
+      "steer": ["Wheel Mount", "MK3 Base Pulley"]
+    },
+    "links": [
+      {"name": "pivot", "match": "31 - 2025 Pivot"},
+      {"name": "arm_stage0", "match": "Phantom Arm V2, Stage 0"},
+      {"name": "arm_stage1", "match": "Phantom Arm V2, Stage 1"},
+      {"name": "arm_stage2", "match": "Phantom Arm V2, Stage 2"},
+      {"name": "intake", "match": "53 - 2025 Intake & Wrist"},
+      {"name": "climber", "match": "41 - 2025 Climber"}
+    ]
+  }
+}

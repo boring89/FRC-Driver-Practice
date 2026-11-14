@@ -168,6 +168,12 @@ func _build_body(bumper_color: Color) -> void:
 	collider.position.y = 0.5 * (bumper_high + clearance)
 	add_child(collider)
 
+	# The CAD model only exists once scripts/build_robot.py has been run.
+	var model_dir: String = config.get("model", "")
+	if model_dir != "" and ResourceLoader.exists(model_dir.path_join("robot.glb")):
+		_build_cad_model(model_dir)
+		return
+
 	var frame_material := StandardMaterial3D.new()
 	frame_material.albedo_color = Color(0.55, 0.57, 0.6)
 	frame_material.metallic = 0.8
@@ -224,6 +230,31 @@ func _build_body(bumper_color: Color) -> void:
 		spinner.add_child(spoke_instance)
 		_wheel_pivots.append(pivot)
 		_wheel_spinners.append(spinner)
+
+
+## Robot built from the Onshape CAD by scripts/build_robot.py: one mesh per
+## link, with each module's "steer_N" and "wheel_N" posed straight ahead.
+func _build_cad_model(model_dir: String) -> void:
+	var scene: PackedScene = load(model_dir.path_join("robot.glb"))
+	var model := scene.instantiate()
+	add_child(model)
+	for i in modules.size():
+		_wheel_pivots.append(model.find_child("steer_%d" % i, true, false))
+		_wheel_spinners.append(model.find_child("wheel_%d" % i, true, false))
+
+	# Everything above the bumpers collides as one convex hull.
+	var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(model_dir.path_join("model.json")))
+	var hull: Array = meta["hull"]
+	if hull.is_empty():
+		return
+	var points := PackedVector3Array()
+	for point: Array in hull:
+		points.append(Frc.to_godot(Vector3(point[0], point[1], point[2])))
+	var shape := ConvexPolygonShape3D.new()
+	shape.points = points
+	var collider := CollisionShape3D.new()
+	collider.shape = shape
+	add_child(collider)
 
 
 func _add_box(center: Vector3, size: Vector3, material: Material) -> void:

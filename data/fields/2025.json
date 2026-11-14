@@ -1,0 +1,21 @@
+{
+  "name": "2025 REEFSCAPE",
+  "half_length_m": 8.774,
+  "half_width_m": 4.026,
+  "min_part_size_m": 0.06,
+  "collision": {
+    "min_part_size_m": 0.08,
+    "decimate_ratio": 0.4,
+    "exclude": ["tape", "Tape", "Vinyl", "FE-2024-01", "Scoring Table", "fence"]
+  },
+  "game_pieces": {"GE-25500": "coral", "GE-25501": "algae"},
+  "clear_panels": {"rgb": [1.0, 1.0, 1.0], "max_thickness_m": 0.007, "min_width_m": 0.2, "alpha": 0.22},
+  "materials": [
+    {"rgb": [0.867, 0.910, 1.0], "color": [0.72, 0.74, 0.77], "metallic": 0.8, "roughness": 0.45},
+    {"rgb": [0.796, 0.824, 0.937], "color": [0.66, 0.68, 0.72], "metallic": 0.8, "roughness": 0.5},
+    {"rgb": [0.776, 0.757, 0.737], "color": [0.70, 0.70, 0.70], "metallic": 0.8, "roughness": 0.5}
+  ],
+  "parts": [
+    {"match": "FE-2024-01", "color": [0.16, 0.17, 0.19], "metallic": 0.0, "roughness": 1.0}
+  ]
+}

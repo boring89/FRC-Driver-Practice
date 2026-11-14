@@ -1,6 +1,6 @@
 extends SceneTree
 ## Headless drive physics checks. Run with:
-##   godot --headless --path . --fixed-fps 240 -s res://tests/drive_test.gd
+##   godot --headless --path . --fixed-fps 240 -s res://tests/drive_test.gd [-- <robot config>]
 
 const G := 9.80665
 
@@ -15,8 +15,11 @@ func _initialize() -> void:
 func _run() -> void:
 	root.add_child(PlaceholderField.new())
 	robot = SwerveRobot.new()
-	robot.setup(SwerveRobot.load_config("res://data/robots/placeholder_swerve.json"), Color.BLUE)
+	var args := OS.get_cmdline_user_args()
+	var config_path := "res://data/robots/placeholder_swerve.json" if args.is_empty() else args[0]
+	robot.setup(SwerveRobot.load_config(config_path), Color.BLUE)
 	root.add_child(robot)
+	print("Robot: %s" % robot.config["name"])
 
 	await _test_rest()
 	await _test_sprint_and_brake()

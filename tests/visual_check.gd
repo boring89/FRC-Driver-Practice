@@ -30,4 +30,17 @@ func _run() -> void:
 		root.get_texture().get_image().save_png(path)
 		print("saved ", path)
 		camera.cycle()
+
+	# Close-up of the robot itself.
+	robot.command = Vector3.ZERO
+	await create_timer(1.0).timeout
+	var close_up := Camera3D.new()
+	root.add_child(close_up)
+	close_up.global_position = robot.global_position + robot.global_basis * Vector3(1.1, 0.75, 0.9)
+	close_up.look_at(robot.global_position + Vector3(0.0, 0.2, 0.0), Vector3.UP)
+	close_up.make_current()
+	await create_timer(0.5).timeout
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png(out_dir.path_join("view_close.png"))
+	print("saved ", out_dir.path_join("view_close.png"))
 	quit()
