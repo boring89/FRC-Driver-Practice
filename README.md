@@ -19,6 +19,9 @@ tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path .
 左搖桿 / WASD 移動，右搖桿 / Q E 旋轉，Start / R 重置，Back / C 切換視角。
 機構預設姿勢用數字鍵（依設定檔裡的順序）或設定檔指定的手把按鍵切換。
 
+遊戲物件：Space / RT 吸入、F / LT 往前送出（得分）、G / 按下右搖桿從入口退回、
+H / RB 讓 human player 從最近的 coral station 送出 coral、L / LB 直接在 intake 裡放一個 coral（預載）。
+
 按 Tab 開啟姿勢編輯器：用滑桿直接擺每個關節，右鍵拖曳環繞視角、滾輪縮放，
 「Save preset」會把目前姿勢存進該機器人的預設姿勢檔（`data/robots/*_presets.json`）。
 
@@ -65,6 +68,12 @@ tools/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --fixed-fps 240
 tools/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --fixed-fps 240 -s res://tests/mechanism_test.gd
 ```
 
+遊戲物件與 intake 測試：
+
+```bash
+tools/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --fixed-fps 240 -s res://tests/game_piece_test.gd
+```
+
 駕駛測試可以指定機器人設定檔：
 
 ```bash
@@ -77,7 +86,7 @@ tools/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --fixed-fps 240
 - `data/robots/`：每台機器人一個設定檔（質量、馬達、齒比、限流、輪胎）
 - `sim/physics/`：馬達與電池模型
 - `sim/robot/`：swerve 模組、底盤、驅動控制、機構（關節與上層結構）
-- `sim/field/`：場地（CAD 場地與替代場地）
+- `sim/field/`：場地（CAD 場地與替代場地）、遊戲物件
 - `data/fields/`：每年場地的處理設定（座標、要移除的遊戲物件、材質）
 - `scripts/`：Onshape 匯出與 Blender 場地建置
 - `cad/sources.json`：Onshape CAD 來源連結

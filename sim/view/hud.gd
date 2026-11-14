@@ -41,7 +41,11 @@ func _process(_dt: float) -> void:
 			names.append(preset["name"])
 		lines.append("%s    [%s]" % ["   ".join(joints), superstructure.preset_name])
 		lines.append("")
-		lines.append("Number keys / buttons: %s    Tab: pose editor" % "  ".join(names))
+		lines.append("Keys 1-9: %s    Tab: pose editor (all %d presets)" % ["  ".join(names.slice(0, 9)), names.size()])
+	if robot.intake:
+		lines.append("Holding: %s" % (robot.intake.held.kind if robot.intake.held else "nothing"))
+		lines.append("Space / RT: intake    F / LT: score    G / R-stick: spit back out")
+		lines.append("H / RB: feed coral at the station    L / LB: preload coral")
 	lines.append_array([
 		"",
 		"Left stick / WASD: move    Right stick / Q E: turn",

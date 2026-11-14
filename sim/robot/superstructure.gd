@@ -22,6 +22,9 @@ class Link:
 	var stowed_com: Vector3
 	var com: Vector3
 	var visual: Node3D
+	## False for a link that has to reach in among field elements (an end
+	## effector around a reef branch), where a convex hull would be far too fat.
+	var collides := true
 	var collider: CollisionShape3D
 	var last_com: Vector3
 	var last_velocity: Vector3
@@ -44,6 +47,7 @@ var _requested := {}
 var _presets_path := ""
 
 var _links: Array[Link] = []
+var _links_by_name := {}
 var _chassis_mass := 0.0
 var _chassis_com: Vector3
 var _chassis_inertia: Vector3
@@ -77,13 +81,21 @@ func setup(cfg: Dictionary, model: Node, meta: Dictionary, body: RigidBody3D) ->
 			link.joint = by_name[joint_cfg["name"]]
 			link.ratio = link_cfg.get("ratio", 1.0)
 			link.mass = link_cfg["mass_kg"]
+			link.collides = link_cfg.get("collides", true)
 			link.visual = model.find_child(link_cfg["name"], true, false)
 			moving[link_cfg["name"]] = link
 			_links.append(link)
+	_links_by_name = moving
 
 	# Every link above the drivebase collides as its own convex hull.
 	var link_meta: Dictionary = meta["links"]
 	for link_name: String in link_meta:
+		if moving.has(link_name) and not (moving[link_name] as Link).collides:
+			var hollow: Link = moving[link_name]
+			var centre: Array = link_meta[link_name]["centroid"]
+			hollow.stowed_com = Frc.to_godot(Vector3(centre[0], centre[1], centre[2]))
+			hollow.com = hollow.stowed_com
+			continue
 		var points := PackedVector3Array()
 		for point: Array in link_meta[link_name]["hull"]:
 			points.append(Frc.to_godot(Vector3(point[0], point[1], point[2])))
@@ -105,6 +117,12 @@ func setup(cfg: Dictionary, model: Node, meta: Dictionary, body: RigidBody3D) ->
 	_chassis_com = body.center_of_mass
 	_chassis_inertia = body.inertia
 	_update_mass_properties(body)
+
+
+## Where the named link has moved to from the stowed pose, body-local.
+func link_pose(link_name: String) -> Transform3D:
+	var link: Link = _links_by_name.get(link_name)
+	return Transform3D.IDENTITY if link == null else _link_pose(link)
 
 
 func go_to(preset: Dictionary) -> void:
@@ -200,7 +218,8 @@ func step(dt: float, body: RigidBody3D, v_bat: float) -> float:
 		var pose := _link_pose(link)
 		link.com = pose * link.stowed_com
 		link.visual.transform = pose
-		link.collider.transform = pose
+		if link.collider:
+			link.collider.transform = pose
 
 		# The chassis is one rigid body, so a link speeding up inside it has to
 		# push back explicitly for momentum to balance.

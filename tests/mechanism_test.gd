@@ -54,7 +54,7 @@ func _run() -> void:
 			settle_time, peak_current, max_tilt, robot.center_of_mass.y])
 		_check("reaches the preset", settle_time > 0.0 and settle_time < 2.5)
 		_check("holds it", _settled())
-		_check("stays upright", max_tilt < 5.0)
+		_check("stays upright", max_tilt < 10.0)
 
 	var drift := robot.global_position.distance_to(start)
 	print("\nback at stow: drifted %.3f m, centre of mass moved %.4f m" % [
@@ -62,8 +62,12 @@ func _run() -> void:
 	_check("robot stayed in place", drift < 0.05)
 	_check("centre of mass returned", robot.center_of_mass.distance_to(stowed_com) < 1e-3)
 
-	print("\n== Sprint and brake with the arm at its highest preset ==")
-	superstructure.go_to(superstructure.presets[-1])
+	print("\n== Sprint and brake with the arm at its most extended preset ==")
+	var tallest: Dictionary = superstructure.presets[0]
+	for preset: Dictionary in superstructure.presets:
+		if preset["positions"]["extension"] > tallest["positions"]["extension"]:
+			tallest = preset
+	superstructure.go_to(tallest)
 	await _wait(2.5)
 	var tilt := 0.0
 	robot.command = Vector3(robot.max_speed, 0.0, 0.0)

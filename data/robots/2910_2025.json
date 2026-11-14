@@ -47,7 +47,7 @@
         "type": "revolute",
         "origin_m": [-0.26, 0.0, 0.324],
         "axis": [0, -1, 0],
-        "range": [0, 120],
+        "range": [-5, 115],
         "motor": "kraken_x60",
         "motor_count": 3,
         "gearing": 120.8,
@@ -68,7 +68,7 @@
         "parent": "arm",
         "origin_m": [0.0, 0.0, 0.202],
         "axis": [1, 0, 0],
-        "range": [0, 1.1],
+        "range": [0, 1.05],
         "motor": "kraken_x60",
         "motor_count": 3,
         "gearing": 11.0,
@@ -91,7 +91,7 @@
         "parent": "extension",
         "origin_m": [0.368, 0.0, 0.197],
         "axis": [0, -1, 0],
-        "range": [-130, 60],
+        "range": [-215, 25],
         "motor": "kraken_x60",
         "motor_count": 1,
         "gearing": 40.0,
@@ -103,12 +103,19 @@
         "max_velocity": 570.0,
         "max_acceleration": 3400.0,
         "links": [
-          {"name": "intake", "mass_kg": 4.5}
+          {"name": "intake", "mass_kg": 4.5, "collides": false}
         ]
       }
     ],
     "sequence": {"slide": "extension", "swing": "arm", "retracted_m": 0.0, "swing_tolerance_deg": 20},
     "presets": "res://data/robots/2910_2025_presets.json"
+  },
+  "intake": {
+    "link": "intake",
+    "pieces": {
+      "coral": {"hold_m": [0.353, 0.0, 0.377], "axis": [0.407, 0, -0.914], "mouth_m": [0.272, 0.0, 0.56], "reach_m": 0.2, "eject_mps": 1.5},
+      "algae": {"hold_m": [0.178, 0.0, 0.497], "axis": [-0.535, 0, 0.845], "mouth_m": [0.178, 0.0, 0.497], "reach_m": 0.25, "eject_mps": 3.0}
+    }
   },
   "model": "res://assets/robots/2910_2025",
   "cad": {

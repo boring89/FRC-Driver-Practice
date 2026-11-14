@@ -41,6 +41,7 @@ func _run() -> void:
 			continue
 		robot.reset_pose(Vector2(3.657 - 0.48, 0.5 * Frc.FIELD_WIDTH), 0.0)
 		superstructure.go_to(preset)
+		main.call("_preload_coral")
 		side.global_position = robot.global_position + Vector3(0.5, 1.1, 2.9)
 		side.look_at(robot.global_position + Vector3(0.5, 1.0, 0.0), Vector3.UP)
 		await _shot(3.0, out_dir.path_join("pose_%s.png" % preset["name"]))

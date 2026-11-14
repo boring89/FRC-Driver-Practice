@@ -7,6 +7,8 @@ const START_POSITION := Vector2(1.6, 2.0)
 
 var robot := SwerveRobot.new()
 var camera := CameraRig.new()
+## Null when the field has no game piece data.
+var pieces: GamePieces
 
 
 func _ready() -> void:
@@ -16,6 +18,10 @@ func _ready() -> void:
 		add_child(CadField.new(FIELD_YEAR))
 	else:
 		add_child(PlaceholderField.new())
+
+	if FileAccess.file_exists(GamePieces.data_path(FIELD_YEAR)):
+		pieces = GamePieces.new(FIELD_YEAR)
+		add_child(pieces)
 
 	robot.setup(SwerveRobot.load_config(ROBOT_CONFIG), Color(0.1, 0.25, 0.85))
 	add_child(robot)
@@ -46,17 +52,44 @@ func _unhandled_input(event: InputEvent) -> void:
 	if key and key.pressed and not key.echo:
 		match key.physical_keycode:
 			KEY_R:
-				robot.reset_pose(START_POSITION, 0.0)
+				_reset()
 			KEY_C:
 				camera.cycle()
+			KEY_H:
+				_feed_coral()
+			KEY_L:
+				_preload_coral()
 			KEY_ESCAPE:
 				get_tree().quit()
 	elif button and button.pressed:
 		match button.button_index:
 			JOY_BUTTON_START:
-				robot.reset_pose(START_POSITION, 0.0)
+				_reset()
 			JOY_BUTTON_BACK:
 				camera.cycle()
+			JOY_BUTTON_RIGHT_SHOULDER:
+				_feed_coral()
+			JOY_BUTTON_LEFT_SHOULDER:
+				_preload_coral()
+
+
+func _reset() -> void:
+	robot.reset_pose(START_POSITION, 0.0)
+	if pieces:
+		pieces.reset()
+
+
+## The human player drops a coral into the station nearest the robot.
+func _feed_coral() -> void:
+	if pieces:
+		pieces.feed_coral(robot.global_position)
+
+
+func _preload_coral() -> void:
+	if pieces and robot.intake and robot.intake.held == null:
+		var coral := pieces.spawn(GamePiece.CORAL)
+		coral.global_position = robot.global_position + Vector3(0.0, 0.5, 0.0)
+		robot.intake.load_piece(coral)
 
 
 func _build_lighting() -> void:

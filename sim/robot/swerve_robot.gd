@@ -18,6 +18,8 @@ var controller: SwerveController
 var battery := Battery.new()
 ## Mechanisms above the drivebase; null for a robot without a CAD model.
 var superstructure: Superstructure
+## Game piece intake; null for a robot without one.
+var intake: Intake
 
 ## Driver request: x, y in m/s and z in rad/s.
 var command := Vector3.ZERO
@@ -154,6 +156,8 @@ func _physics_process(dt: float) -> void:
 
 	if superstructure:
 		total_current += superstructure.step(dt, self, battery.voltage)
+	if intake:
+		intake.step(dt, self)
 	battery.step(total_current, dt)
 
 
@@ -257,6 +261,8 @@ func _build_cad_model(model_dir: String) -> void:
 	var meta: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(model_dir.path_join("model.json")))
 	superstructure = Superstructure.new()
 	superstructure.setup(config.get("mechanism", {}), model, meta, self)
+	if config.has("intake"):
+		intake = Intake.new(config["intake"])
 
 
 func _add_box(center: Vector3, size: Vector3, material: Material) -> void:

@@ -3,7 +3,8 @@ extends Node
 ## Reads the driver's gamepad (or keyboard) and writes the robot's drive command.
 ## Left stick translates, right stick X rotates; W/A/S/D and Q/E on keyboard.
 ## Mechanism presets are on the buttons named in the robot config and on the
-## number keys, in the order the config lists them.
+## number keys, in the order the config lists them. Space or the right trigger
+## runs the intake; F or the left trigger feeds the piece through and out.
 
 const DEADBAND := 0.1
 const _BUTTONS := {
@@ -38,6 +39,18 @@ func _physics_process(_dt: float) -> void:
 		var key_turn := float(Input.is_physical_key_pressed(KEY_Q)) - float(Input.is_physical_key_pressed(KEY_E))
 		if key_turn != 0.0:
 			turn = key_turn
+
+	if robot.intake:
+		var pull := Input.is_physical_key_pressed(KEY_SPACE)
+		var push := Input.is_physical_key_pressed(KEY_F)
+		if not pads.is_empty():
+			pull = pull or Input.get_joy_axis(pads[0], JOY_AXIS_TRIGGER_RIGHT) > 0.5
+			push = push or Input.get_joy_axis(pads[0], JOY_AXIS_TRIGGER_LEFT) > 0.5
+		robot.intake.command = float(pull) - float(push)
+		# G or pressing the right stick spits the piece back out of the mouth.
+		if Input.is_physical_key_pressed(KEY_G) \
+				or (not pads.is_empty() and Input.is_joy_button_pressed(pads[0], JOY_BUTTON_RIGHT_STICK)):
+			robot.intake.command = -2.0
 
 	translate = _shape(translate)
 	turn = _shape(Vector2(turn, 0.0)).x
