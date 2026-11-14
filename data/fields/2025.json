@@ -2,6 +2,7 @@
   "name": "2025 REEFSCAPE",
   "half_length_m": 8.774,
   "half_width_m": 4.026,
+  "reefs": {"centers_m": [[4.489, 4.026], [13.059, 4.026]], "face_distance_m": 0.832, "branch_offset_m": 0.1643},
   "min_part_size_m": 0.06,
   "collision": {
     "min_part_size_m": 0.08,

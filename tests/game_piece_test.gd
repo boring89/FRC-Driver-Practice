@@ -20,6 +20,7 @@ func _run() -> void:
 		print("No CAD field asset; run scripts/build_field.py first.")
 		quit(1)
 		return
+	Settings.apply(self)
 	root.add_child(CadField.new(YEAR))
 	var pieces := GamePieces.new(YEAR)
 	root.add_child(pieces)
@@ -114,6 +115,42 @@ func _run() -> void:
 		_check("coral stays on the %s branch" % shot[0],
 				rest.z > float(shot[2]) and rest.z < float(shot[3]) and absf(rest.y - BRANCH_Y) < 0.05)
 		scored.queue_free()
+
+	print("\n== Auto-align, then score ==")
+	var driver := DriverInput.new()
+	driver.robot = robot
+	driver.reef_align = ReefAlign.new(
+			JSON.parse_string(FileAccess.get_file_as_string("res://data/fields/%d.json" % YEAR))["reefs"])
+	root.add_child(driver)
+	# Only its align target is under test; keep it from overwriting the command.
+	driver.set_physics_process(false)
+	robot.reset_pose(Vector2(2.2, BRANCH_Y + 0.7), 0.4)
+	robot.superstructure.go_to(presets["l4"])
+	var aligned := pieces.spawn(GamePiece.CORAL)
+	aligned.global_position = robot.global_position + Vector3(0.0, 0.5, 0.0)
+	robot.intake.load_piece(aligned)
+	# A robot facing this reef face looks along +x, so its left is the higher-y branch.
+	var goal := driver.align_target(1.0)
+	for tick in int(2.5 * Engine.physics_ticks_per_second):
+		var pose := Frc.from_godot(robot.global_position)
+		robot.command = driver.reef_align.command(Vector2(pose.x, pose.y), robot.yaw(), goal)
+		await physics_frame
+	robot.command = Vector3.ZERO
+	var arrived := Frc.from_godot(robot.global_position)
+	var miss := Vector2(arrived.x - goal.x, arrived.y - goal.y).length()
+	print("stopped %.3f m and %.1f deg from the scoring spot at (%.3f, %.3f)" % [
+		miss, rad_to_deg(absf(angle_difference(robot.yaw(), goal.z))), goal.x, goal.y])
+	_check("reaches the scoring spot", miss < 0.03 and absf(angle_difference(robot.yaw(), goal.z)) < deg_to_rad(2.0))
+	_check("picked the branch on the robot's left", absf(goal.y - BRANCH_Y) < 0.01)
+	robot.intake.command = -1.0
+	await _wait(0.1)
+	robot.intake.command = 0.0
+	await _wait(1.0)
+	robot.superstructure.go_to(presets["stow"])
+	await _wait(2.0)
+	var hung := Frc.from_godot(aligned.global_position)
+	print("coral rests at height %.3f m" % hung.z)
+	_check("coral stays on the L4 branch after auto-align", hung.z > 1.6 and hung.z < 1.8)
 
 	print("\n%s" % ("ALL PASSED" if failures == 0 else "%d FAILED" % failures))
 	quit(failures)

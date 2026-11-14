@@ -16,12 +16,27 @@ tools/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --import
 tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path .
 ```
 
-預設鍵位：左搖桿 / WASD 移動，右搖桿 / Q E 旋轉，Start / R 重置，Back / C 切換視角，Esc 回標題選單。
-除了搖桿駕駛和數字鍵之外，其餘鍵位都能在 Settings 的 Controls 分頁重新綁定；設定存在 `user://settings.cfg`。
-機構預設姿勢用數字鍵（依設定檔裡的順序）或設定檔指定的手把按鍵切換。
+預設鍵位（鍵盤 / 手把），都能在 Settings 的 Keybinds 分頁重新綁定，設定存在 `user://settings.cfg`：
 
-遊戲物件：Space / RT 吸入、F / LT 往前送出（得分）、G / 按下右搖桿從入口退回、
-H / RB 讓 human player 從最近的 coral station 送出 coral、L / LB 直接在 intake 裡放一個 coral（預載）。
+| 動作 | 鍵盤 | 手把 |
+|---|---|---|
+| 移動 | W A S D | 左搖桿 |
+| 旋轉 | J / L | 右搖桿 |
+| 自動對位左 / 右樹枝 | Q / E | LB / RB |
+| L1 / L2 / L3 / L4 | U / I / O / P | A / B / X / Y |
+| Intake（按住吸入，並切到吸取姿勢） | Shift | LT |
+| Place（送出得分） | K | RT |
+| 切換 coral / algae 模式 | ; | 十字鍵上 |
+| Robot Special（station 取 coral / HP 取 algae） | V | 十字鍵右 |
+| Stow | Z | 十字鍵下 |
+| Climb（每按一次進到下一段） | C | 十字鍵左 |
+| 切換視角 | Space | 按下右搖桿 |
+| 行駛速度 40% / 70% / 100% | 1 / 2 / 3 | |
+| Station 送出 coral | H | Back |
+| 預載 coral | B | |
+| 重置 | R | Start |
+
+Esc 回標題選單。每個按鍵在各模式下對應哪個姿勢，寫在機器人設定檔的 `controls` 區塊。
 
 按 Tab 開啟姿勢編輯器：用滑桿直接擺每個關節，右鍵拖曳環繞視角、滾輪縮放，
 「Save preset」會把目前姿勢存進該機器人的預設姿勢檔（`data/robots/*_presets.json`）。

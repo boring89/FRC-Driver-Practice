@@ -13,7 +13,7 @@ var pieces: GamePieces
 
 func _ready() -> void:
 	Settings.apply(get_tree())
-	_build_lighting()
+	Stage.add_lighting(self)
 	# The CAD field only exists once scripts/build_field.py has been run.
 	if ResourceLoader.exists(CadField.asset_path(Session.year)):
 		add_child(CadField.new(Session.year))
@@ -30,6 +30,11 @@ func _ready() -> void:
 
 	var driver := DriverInput.new()
 	driver.robot = robot
+	var field_config := "res://data/fields/%d.json" % Session.year
+	if FileAccess.file_exists(field_config):
+		var field: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(field_config))
+		if field.has("reefs"):
+			driver.reef_align = ReefAlign.new(field["reefs"])
 	add_child(driver)
 
 	camera.target = robot
@@ -39,6 +44,7 @@ func _ready() -> void:
 	var hud := Hud.new()
 	hud.robot = robot
 	hud.camera = camera
+	hud.driver = driver
 	add_child(hud)
 
 	var pose_editor := PoseEditor.new()
@@ -77,26 +83,3 @@ func _preload_coral() -> void:
 		var coral := pieces.spawn(GamePiece.CORAL)
 		coral.global_position = robot.global_position + Vector3(0.0, 0.5, 0.0)
 		robot.intake.load_piece(coral)
-
-
-func _build_lighting() -> void:
-	var sun := DirectionalLight3D.new()
-	sun.rotation_degrees = Vector3(-60.0, -35.0, 0.0)
-	sun.light_energy = 1.1
-	sun.shadow_enabled = Settings.quality > 0
-	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS if Settings.quality == 2 \
-			else DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
-	sun.directional_shadow_max_distance = 30.0
-	add_child(sun)
-
-	var sky := Sky.new()
-	sky.sky_material = ProceduralSkyMaterial.new()
-	var environment := Environment.new()
-	environment.background_mode = Environment.BG_SKY
-	environment.sky = sky
-	environment.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
-	environment.ambient_light_energy = 0.5
-	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	var world := WorldEnvironment.new()
-	world.environment = environment
-	add_child(world)

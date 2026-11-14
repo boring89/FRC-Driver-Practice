@@ -1,9 +1,10 @@
 class_name Hud
 extends CanvasLayer
-## On-screen telemetry: speed, heading, battery and per-wheel slip.
+## On-screen telemetry and a reminder of the controls, as currently bound.
 
 var robot: SwerveRobot
 var camera: CameraRig
+var driver: DriverInput
 
 var _label := Label.new()
 
@@ -24,7 +25,8 @@ func _process(_dt: float) -> void:
 		slips.append("%.2f" % m.slip_speed)
 	var lines := PackedStringArray([
 		"%s    %d FPS" % [robot.config["name"], Engine.get_frames_per_second()],
-		"Speed  %.2f m/s    Heading  %.0f deg" % [robot.ground_speed(), rad_to_deg(robot.yaw())],
+		"Speed  %.2f m/s    Heading  %.0f deg    Drive speed %d%%" % [
+			robot.ground_speed(), rad_to_deg(robot.yaw()), roundi(100.0 * driver.speed_scale)],
 		"Battery  %.1f V    %.0f A" % [robot.battery.voltage, robot.battery.current],
 		"Wheel slip (m/s)  " + "  ".join(slips),
 	])
@@ -36,25 +38,26 @@ func _process(_dt: float) -> void:
 				joints.append("%s %.2f m" % [joint.name, joint.position])
 			else:
 				joints.append("%s %.0f deg" % [joint.name, rad_to_deg(joint.position)])
-		var names := PackedStringArray()
-		for preset: Dictionary in superstructure.presets:
-			names.append(preset["name"])
 		lines.append("%s    [%s]" % ["   ".join(joints), superstructure.preset_name])
-		lines.append("")
-		lines.append("Keys 1-9: %s    %s: pose editor (all %d presets)" % [
-			"  ".join(names.slice(0, 9)), Settings.key_name("pose_editor"), names.size()])
 	if robot.intake:
-		lines.append("Holding: %s" % (robot.intake.held.kind if robot.intake.held else "nothing"))
-		lines.append("%s: intake    %s: score    %s: spit back out" % [
-			Settings.describe("intake"), Settings.describe("score"), Settings.describe("spit")])
-		lines.append("%s: feed coral at the station    %s: preload coral" % [
-			Settings.describe("feed_coral"), Settings.describe("preload_coral")])
-	lines.append_array([
-		"",
-		"Left stick / %s %s %s %s: move    Right stick / %s %s: turn" % [
-			Settings.key_name("move_forward"), Settings.key_name("move_left"), Settings.key_name("move_back"),
-			Settings.key_name("move_right"), Settings.key_name("turn_left"), Settings.key_name("turn_right")],
-		"%s: reset    %s: camera (%s)    Esc: menu" % [
-			Settings.describe("reset"), Settings.describe("camera"), CameraRig.MODE_NAMES[camera.mode]],
-	])
+		lines.append("Mode: %s    Holding: %s" % [
+			"algae" if driver.algae_mode else "coral", robot.intake.held.kind if robot.intake.held else "nothing"])
+	lines.append("")
+	for group: Array in [
+		["l1", "l2", "l3", "l4", "stow"],
+		["intake", "place", "special", "mode_toggle", "climb"],
+		["align_left", "align_right", "camera", "feed_coral", "reset"],
+	]:
+		var help := PackedStringArray()
+		for id: String in group:
+			help.append("%s: %s" % [Settings.describe(id), _label_of(id)])
+		lines.append("    ".join(help))
+	lines.append("Camera: %s    Esc: menu" % CameraRig.MODE_NAMES[camera.mode])
 	_label.text = "\n".join(lines)
+
+
+func _label_of(id: String) -> String:
+	for action: Array in Settings.ACTIONS:
+		if action[0] == id:
+			return action[1]
+	return id

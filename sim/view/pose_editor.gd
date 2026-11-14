@@ -101,7 +101,7 @@ func _input(event: InputEvent) -> void:
 func _process(_dt: float) -> void:
 	if not visible or _sliders.is_empty():
 		return
-	# Presets picked with the number keys or the gamepad move the sliders too.
+	# Presets picked with the driver's buttons move the sliders too.
 	if robot.superstructure.preset_name != "":
 		_sync_sliders()
 

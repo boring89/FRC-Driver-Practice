@@ -125,6 +125,14 @@ func link_pose(link_name: String) -> Transform3D:
 	return Transform3D.IDENTITY if link == null else _link_pose(link)
 
 
+## Sends the mechanisms to the preset called `name`, if there is one.
+func go_to_named(name: String) -> void:
+	for preset: Dictionary in presets:
+		if preset["name"] == name:
+			go_to(preset)
+			return
+
+
 func go_to(preset: Dictionary) -> void:
 	preset_name = preset["name"]
 	var positions: Dictionary = preset["positions"]

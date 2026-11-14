@@ -111,6 +111,14 @@
     "sequence": {"slide": "extension", "swing": "arm", "retracted_m": 0.0, "swing_tolerance_deg": 20},
     "presets": "res://data/robots/2910_2025_presets.json"
   },
+  "controls": {
+    "stow": "stow",
+    "climb": ["climb_collect", "climb_lock"],
+    "coral": {"l1": "l1", "l2": "l2", "l3": "l3", "l4": "l4", "intake": "ground_coral", "special": "station_coral"},
+    "algae": {"l1": "processor_algae", "l2": "l2_algae_front", "l3": "l3_algae_front", "l4": "net_algae", "intake": "ground_algae", "special": "hp_algae"},
+    "reverse_place": ["l1"],
+    "align_standoff_m": {"default": 0.03, "l2": 0.08, "l3": 0.02, "l4": 0.0}
+  },
   "intake": {
     "link": "intake",
     "pieces": {
