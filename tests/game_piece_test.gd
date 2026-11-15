@@ -59,7 +59,45 @@ func _run() -> void:
 	_check("lands on the carpet", landed.z < 0.16)
 	_check("ends up in the field near the station", landed.x > 0.5 and landed.y > 0.5 and landed.length() < 4.0)
 
+	print("\n== Human players feeding unasked ==")
+	pieces.auto_feed_limit = 3
+	pieces.feed_alliance = "blue"
+	await _wait(8.0)
+	var ready := pieces.loose_coral()
+	var sides := {true: 0, false: 0}
+	var own_half := true
+	for loose: GamePiece in ready:
+		var lies := Frc.from_godot(loose.global_position)
+		sides[lies.y > 0.5 * Frc.FIELD_WIDTH] += 1
+		own_half = own_half and lies.x < 0.5 * Frc.FIELD_LENGTH
+	print("%d coral lying loose: %d by the left station, %d by the right" % [ready.size(), sides[true], sides[false]])
+	_check("feeds up to the limit and stops", ready.size() == 3)
+	_check("feeds from both of the alliance's stations", sides[true] > 0 and sides[false] > 0 and own_half)
+	ready[0].queue_free()
+	await _wait(0.5)
+	_check("waits a moment before replacing a coral", pieces.loose_coral().size() == 2)
+	await _wait(3.0)
+	_check("replaces a coral that was taken", pieces.loose_coral().size() == 3)
+	pieces.auto_feed_limit = 0
+
 	print("\n== Intake ==")
+	var stray := pieces.spawn(GamePiece.ALGAE)
+	var algae_mouth: Array = robot.config["intake"]["pieces"]["algae"]["mouth_m"]
+	stray.global_position = robot.global_transform * Frc.to_godot(Vector3(algae_mouth[0], algae_mouth[1], algae_mouth[2]))
+	# Held still inside the robot, where it would otherwise be shoved out.
+	stray.collision_layer = 0
+	stray.collision_mask = 0
+	stray.freeze = true
+	robot.intake.wanted = GamePiece.CORAL
+	robot.intake.command = 1.0
+	await _wait(0.2)
+	_check("leaves an algae alone when after coral", robot.intake.held == null)
+	robot.intake.wanted = GamePiece.ALGAE
+	await _wait(0.2)
+	_check("takes the algae when after algae", robot.intake.held == stray)
+	stray.queue_free()
+	await _wait(0.1)
+	robot.intake.wanted = GamePiece.CORAL
 	var coral := pieces.spawn(GamePiece.CORAL)
 	var mouth: Array = robot.config["intake"]["pieces"]["coral"]["mouth_m"]
 	coral.global_position = robot.global_transform * Frc.to_godot(Vector3(mouth[0], 0.0, mouth[2] + 0.1))
@@ -148,6 +186,15 @@ func _run() -> void:
 	await _wait(2.0)
 	print("after an L4: blue %d, red %d" % [game.scores["blue"], game.scores["red"]])
 	_check("L4 coral is worth 5", game.scores["blue"] == 5 and game.scores["red"] == 0)
+	# Reaching back up to the branch with the intake running.
+	robot.superstructure.go_to(presets["l4"])
+	robot.intake.command = 1.0
+	await _wait(2.0)
+	robot.intake.command = 0.0
+	_check("a coral on the reef is not taken back", counted.on_reef and robot.intake.held == null)
+	robot.superstructure.go_to(presets["stow"])
+	await _wait(2.0)
+	_check("and still scores", game.scores["blue"] == 5)
 	# The rest placed by hand: L3 and L2 on the same blue branch column, a
 	# coral in the red reef's trough, algae in the net and through a processor.
 	for spot: Vector3 in [
@@ -237,8 +284,11 @@ func _run() -> void:
 	_check("turned its back to the reef", absf(angle_difference(robot.yaw(), PI)) < deg_to_rad(2.0))
 	robot.intake.command = -2.0
 	await _wait(0.1)
-	robot.intake.command = 0.0
+	# Straight back to intaking, with the coral still at the mouth it left by.
+	robot.intake.command = 1.0
 	await _wait(1.0)
+	robot.intake.command = 0.0
+	_check("the coral just placed is not taken back", robot.intake.held == null)
 	robot.superstructure.go_to(presets["stow"])
 	await _wait(2.0)
 	var hung := Frc.from_godot(aligned.global_position)

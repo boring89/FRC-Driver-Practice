@@ -24,6 +24,8 @@ func _ready() -> void:
 
 	if FileAccess.file_exists(GamePieces.data_path(Session.year)):
 		pieces = GamePieces.new(Session.year)
+		pieces.auto_feed_limit = Session.auto_feed_limit
+		pieces.feed_alliance = Session.alliance
 		add_child(pieces)
 
 	robot.setup(SwerveRobot.load_config(Session.robot_config), Color(0.1, 0.25, 0.85))

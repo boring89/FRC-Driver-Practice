@@ -11,7 +11,7 @@ tools/godot/Godot_v4.7.2-stable_linux.x86_64 --headless --path . --import
 ```
 
 啟動（會先進標題選單，選賽季和機器人；按 Play 進入比賽設定，選聯盟、在場地圖上拖曳決定起始位置、
-選計時比賽或自由練習和比賽長度；Settings 裡可以調畫質和鍵位）：
+選計時比賽或自由練習、比賽長度和 coral 補給方式；Settings 裡可以調畫質和鍵位）：
 
 ```bash
 tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path .
@@ -33,7 +33,7 @@ tools/godot/Godot_v4.7.2-stable_linux.x86_64 --path .
 | Climb（每按一次進到下一段） | C | 十字鍵左 |
 | 切換視角 | Space | 按下右搖桿 |
 | 行駛速度 40% / 70% / 100% | 1 / 2 / 3 | |
-| Station 送出 coral | H | Back |
+| Station 手動送出一個 coral | H | Back |
 | 預載 coral | B | |
 | 重置 | R | Start |
 
@@ -41,6 +41,11 @@ Esc 回標題選單。每個按鍵在各模式下對應哪個姿勢，寫在機�
 按 L1–L4 時會看車頭朝向：車頭朝著最近的 reef 就用正面姿勢，車尾朝著 reef 且機器人有對應的
 背向姿勢（`controls.<模式>.back`）就用背向姿勢；自動對位會維持那個朝向。
 自動對位的左右以駕駛看出去的方向為準，所以 reef 背面的左右和面對那一面時相反。
+
+Intake 只吸目前模式的遊戲物件（coral 模式不會吸 algae，反之亦然），也不會把已經放在 reef 上的
+coral 吸回來。己方兩個 coral station 的 human player 會自動補 coral：地上散落的 coral 少於上限
+（預設 4 個，比賽設定的 Coral feed 可選 2 / 4 / 6 或 manual 關閉）時每 1.5 秒丟一個，丟到附近比較
+少的那個 station，到上限就停；立著的 staged coral 和 reef 上的不算。
 
 畫面上只有底部的比分和比賽時間。計時比賽預設 2:15（teleop，長度可在比賽設定裡改），最後 20 秒是
 endgame，時間到機器人會停止回應，按重置開始新的一場；自由練習不倒數，只計分和已經過的時間。分數依場上當下的狀態計算：coral 掛在 reef 樹枝上 L2 / L3 / L4 各 3 / 4 / 5 分

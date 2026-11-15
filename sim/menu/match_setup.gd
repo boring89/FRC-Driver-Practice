@@ -1,7 +1,8 @@
 class_name MatchSetup
 extends Control
 ## The screen between the title menu and a match: alliance, where the robot
-## starts, and whether it is a timed match or open-ended practice.
+## starts, whether it is a timed match or open-ended practice, and how coral
+## is fed.
 
 signal closed
 signal started
@@ -9,6 +10,7 @@ signal started
 var _alliance := MenuStyle.button("", 22)
 var _mode := MenuStyle.button("", 22)
 var _length := MenuStyle.button("", 22)
+var _feed := MenuStyle.button("", 22)
 var _map := StartSpotMap.new()
 
 
@@ -40,7 +42,9 @@ func _ready() -> void:
 	options.custom_minimum_size = Vector2(260.0, 0.0)
 	options.add_theme_constant_override("separation", 10)
 	body.add_child(options)
-	for option: Array in [[_alliance, _cycle_alliance], [_mode, _cycle_mode], [_length, _cycle_length]]:
+	for option: Array in [
+		[_alliance, _cycle_alliance], [_mode, _cycle_mode], [_length, _cycle_length], [_feed, _cycle_feed],
+	]:
 		(option[0] as Button).pressed.connect(option[1])
 		options.add_child(option[0])
 	var reset_spot := MenuStyle.button("Reset starting spot", 18)
@@ -90,6 +94,8 @@ func _refresh() -> void:
 	_mode.text = "Mode: %s" % ("Free practice" if Session.free_practice else "Match")
 	_length.text = "Length: %d:%02d" % [Session.match_seconds / 60, Session.match_seconds % 60]
 	_length.disabled = Session.free_practice
+	_feed.text = "Coral feed: %s" % (
+			"keep %d on floor" % Session.auto_feed_limit if Session.auto_feed_limit > 0 else "manual")
 	var pose := Session.start_pose()
 	_map.alliance = Session.alliance
 	_map.spot = Vector2(pose.x, pose.y)
@@ -112,6 +118,12 @@ func _cycle_mode() -> void:
 func _cycle_length() -> void:
 	var index := Session.MATCH_LENGTHS.find(Session.match_seconds)
 	Session.match_seconds = Session.MATCH_LENGTHS[(index + 1) % Session.MATCH_LENGTHS.size()]
+	_refresh()
+
+
+func _cycle_feed() -> void:
+	var index := Session.AUTO_FEED_LIMITS.find(Session.auto_feed_limit)
+	Session.auto_feed_limit = Session.AUTO_FEED_LIMITS[(index + 1) % Session.AUTO_FEED_LIMITS.size()]
 	_refresh()
 
 

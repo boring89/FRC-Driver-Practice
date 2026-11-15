@@ -20,6 +20,9 @@ const _TUBE_SIDES := 24
 var kind: String
 ## True while a robot's intake is carrying the piece.
 var held := false
+## True while a coral sits on a reef, on a branch or in the trough. Kept up to
+## date by the Match; intakes leave such a coral where it is.
+var on_reef := false
 
 static var _coral_mesh: ArrayMesh
 

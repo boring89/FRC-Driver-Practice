@@ -4,6 +4,7 @@ extends RefCounted
 ## the menus, with defaults so the scene also runs on its own.
 
 const MATCH_LENGTHS := [75, 135, 150, 195, 315]
+const AUTO_FEED_LIMITS := [0, 2, 4, 6]
 
 static var year := 2025
 static var robot_config := "res://data/robots/2910_2025.json"
@@ -15,6 +16,8 @@ static var start_heading := 0.0
 ## No clock and no end: the match just keeps score.
 static var free_practice := false
 static var match_seconds := 135
+## Coral the human players keep lying ready on the floor; 0 feeds only when asked.
+static var auto_feed_limit := 4
 
 
 ## Field heading the driver looks along from behind their alliance wall.

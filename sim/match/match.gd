@@ -90,30 +90,36 @@ func evaluate() -> void:
 	var occupied := {}
 	for piece: GamePiece in _pieces.get_children():
 		if piece.held or piece.is_queued_for_deletion():
+			piece.on_reef = false
 			continue
 		var at := Frc.from_godot(piece.global_position)
 		var resting := piece.linear_velocity.length() < _REST_SPEED
-		if piece.kind == GamePiece.CORAL and resting:
-			_count_coral(at, totals, occupied)
+		if piece.kind == GamePiece.CORAL:
+			piece.on_reef = _count_coral(at, resting, totals, occupied)
 		elif piece.kind == GamePiece.ALGAE:
 			_count_algae(piece, at, resting, totals)
 	scores = totals
 
 
-func _count_coral(at: Vector3, totals: Dictionary, occupied: Dictionary) -> void:
+## Adds what a coral at `at` is worth, once it has come to rest, and returns
+## whether it is on a reef at all.
+func _count_coral(at: Vector3, resting: bool, totals: Dictionary, occupied: Dictionary) -> bool:
 	for i in _branches.size():
 		var branch := _branches[i]
-		# Only one coral counts per branch.
-		if not occupied.has(i) and at.distance_to(branch["at"]) < _BRANCH_REACH:
-			occupied[i] = true
-			totals[branch["alliance"]] += int(branch["points"])
-			return
+		if at.distance_to(branch["at"]) < _BRANCH_REACH:
+			# Only one coral counts per branch.
+			if resting and not occupied.has(i):
+				occupied[i] = true
+				totals[branch["alliance"]] += int(branch["points"])
+			return true
 	var trough: Dictionary = _cfg["trough"]
 	for i in _reefs.size():
 		if Vector2(at.x, at.y).distance_to(_reefs[i]) < float(trough["radius_m"]) \
 				and at.z > float(trough["heights_m"][0]) and at.z < float(trough["heights_m"][1]):
-			totals[_cfg["reef_alliances"][i]] += int(_cfg["coral_points"]["l1"])
-			return
+			if resting:
+				totals[_cfg["reef_alliances"][i]] += int(_cfg["coral_points"]["l1"])
+			return true
+	return false
 
 
 func _count_algae(piece: GamePiece, at: Vector3, resting: bool, totals: Dictionary) -> void:

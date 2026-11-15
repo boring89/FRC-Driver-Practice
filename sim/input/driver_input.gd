@@ -52,6 +52,7 @@ func _physics_process(_dt: float) -> void:
 
 	if robot.intake:
 		robot.intake.command = 0.0
+		robot.intake.wanted = GamePiece.ALGAE if algae_mode else GamePiece.CORAL
 		if Input.is_action_pressed("place") and not typing:
 			# Some poses score by backing the piece out of the mouth instead.
 			var reversed: Array = _controls().get("reverse_place", [])

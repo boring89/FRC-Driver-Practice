@@ -16,6 +16,9 @@ const _CLEARANCE_DISTANCE := 0.35
 ## +1 runs the rollers inward, -1 feeds the piece on through and out the far
 ## side, -2 reverses it back out of the mouth, 0 stops.
 var command := 0.0
+## The kind of piece the driver is after; the intake leaves the other kind
+## alone. Empty takes whatever reaches the mouth.
+var wanted := ""
 var held: GamePiece
 
 var _link: String
@@ -75,6 +78,12 @@ func step(dt: float, robot: SwerveRobot) -> void:
 	elif command > 0.0:
 		for piece: GamePiece in robot.get_tree().get_nodes_in_group(GamePiece.GROUP):
 			if piece.held or not _hold.has(piece.kind):
+				continue
+			if wanted != "" and piece.kind != wanted:
+				continue
+			# A coral placed on a reef stays there, and so does the piece just let
+			# go of, which is still right at the mouth.
+			if piece.on_reef or piece == _released:
 				continue
 			var mouth := link_pose * (_mouth[piece.kind] as Vector3)
 			if piece.global_position.distance_to(mouth) < float(_reach[piece.kind]):
