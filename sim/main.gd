@@ -66,6 +66,8 @@ func _ready() -> void:
 	pose_editor.camera = camera
 	add_child(pose_editor)
 
+	_preload_coral()
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("reset"):
@@ -85,11 +87,16 @@ func _process(_dt: float) -> void:
 	driver.enabled = game == null or game.running
 
 
-## Puts the robot and the game pieces back and starts a new match.
+## Puts the robot and the game pieces back, with a coral preloaded, and starts
+## a new match.
 func _reset() -> void:
+	if robot.intake:
+		robot.intake.reset(robot)
+	driver.reset()
 	_place_robot()
 	if pieces:
 		pieces.reset()
+	_preload_coral()
 	if game:
 		game.start(Session.match_seconds, Session.free_practice)
 

@@ -5,6 +5,11 @@ extends Node
 ## button go through the actions bound in Settings. What a button means for
 ## this robot (which preset "L3" is, in coral or algae mode, scoring nose-first
 ## or tail-first) comes from the robot config's "controls" block.
+##
+## The poses that block lists under "pickup" are for taking a piece from the
+## field rather than scoring one: the rollers run by themselves in them, and
+## asking for one with empty hands in coral mode switches to algae mode until
+## that algae has been scored.
 
 const DEADBAND := 0.1
 const SPEED_SCALES := {"speed_1": 0.4, "speed_2": 0.7, "speed_3": 1.0}
@@ -21,6 +26,18 @@ var enabled := true
 var _climb_step := 0
 # Reef level the driver last asked for ("l1".."l4"), or "" after anything else.
 var _level := ""
+# True while in algae mode only because a pickup pose asked for it.
+var _borrowed_algae_mode := false
+var _carrying_algae := false
+
+
+## Back to how a match starts: coral mode, nothing asked for yet.
+func reset() -> void:
+	algae_mode = false
+	_borrowed_algae_mode = false
+	_carrying_algae = false
+	_climb_step = 0
+	_level = ""
 
 
 func _physics_process(_dt: float) -> void:
@@ -51,6 +68,13 @@ func _physics_process(_dt: float) -> void:
 			turn = key_turn
 
 	if robot.intake:
+		var held := robot.intake.held
+		# The algae this mode was borrowed for has left the intake again.
+		if _carrying_algae and held == null and _borrowed_algae_mode:
+			algae_mode = false
+			_borrowed_algae_mode = false
+		_carrying_algae = held != null and held.kind == GamePiece.ALGAE
+
 		robot.intake.command = 0.0
 		robot.intake.wanted = GamePiece.ALGAE if algae_mode else GamePiece.CORAL
 		if Input.is_action_pressed("place") and not typing:
@@ -58,6 +82,8 @@ func _physics_process(_dt: float) -> void:
 			var reversed: Array = _controls().get("reverse_place", [])
 			robot.intake.command = -2.0 if reversed.has(robot.superstructure.preset_name) else -1.0
 		elif Input.is_action_pressed("intake") and not typing:
+			robot.intake.command = 1.0
+		elif _is_pickup(robot.superstructure.preset_name):
 			robot.intake.command = 1.0
 
 	translate = _shape(translate) * speed_scale
@@ -83,9 +109,12 @@ func level_preset(level: String) -> String:
 
 
 ## Where auto-align would take the robot for the branch on `side` (+1 left,
-## -1 right, from the driver's point of view). The current preset decides how
-## far back it stands and whether it turns its back to the reef.
+## -1 right, from the driver's point of view), or for the middle of the face in
+## algae mode: a reef's algae sit between its branches. The current preset
+## decides how far back it stands and whether it turns its back to the reef.
 func align_target(side: float) -> Vector3:
+	if algae_mode:
+		side = 0.0
 	var pose := Frc.from_godot(robot.global_position)
 	var preset := robot.superstructure.preset_name
 	var standoffs: Dictionary = _controls().get("align_standoff_m", {})
@@ -108,12 +137,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if robot == null or robot.superstructure == null or not enabled:
 		return
 	var controls := _controls()
-	var mode: Dictionary = controls.get("algae" if algae_mode else "coral", {})
 	for level: String in _LEVELS:
 		if event.is_action_pressed(level):
 			_level = level
+			# With no coral to score, a level that has an algae to take means that.
+			if not algae_mode and robot.intake and robot.intake.held == null \
+					and _is_pickup(controls.get("algae", {}).get(level, "")):
+				algae_mode = true
+				_borrowed_algae_mode = true
 			robot.superstructure.go_to_named(level_preset(level))
 			return
+	var mode: Dictionary = controls.get("algae" if algae_mode else "coral", {})
 	if event.is_action_pressed("align_left") or event.is_action_pressed("align_right"):
 		# The robot may have turned round since the level was picked.
 		if _level != "":
@@ -123,6 +157,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if event.is_action_pressed("mode_toggle"):
 		algae_mode = not algae_mode
+		_borrowed_algae_mode = false
 	elif event.is_action_pressed("intake") and mode.has("intake"):
 		_level = ""
 		robot.superstructure.go_to_named(mode["intake"])
@@ -132,6 +167,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event.is_action_pressed("stow") and controls.has("stow"):
 		_level = ""
 		_climb_step = 0
+		# Stowing before the algae was taken gives up on it.
+		if _borrowed_algae_mode and not _carrying_algae:
+			algae_mode = false
+			_borrowed_algae_mode = false
 		robot.superstructure.go_to_named(controls["stow"])
 	elif event.is_action_pressed("climb") and controls.has("climb"):
 		# Each press moves on to the next stage of the climb.
@@ -142,6 +181,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	for action: String in SPEED_SCALES:
 		if event.is_action_pressed(action):
 			speed_scale = SPEED_SCALES[action]
+
+
+func _is_pickup(preset: String) -> bool:
+	return preset != "" and _controls().get("pickup", []).has(preset)
 
 
 func _controls() -> Dictionary:

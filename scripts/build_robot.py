@@ -8,6 +8,8 @@ origin on the floor under the frame centre) with one mesh per moving link:
 straight ahead, origin at the wheel centre), and the links named in the
 config. Writes <output dir>/model.json with what the CAD says about module
 positions, wheel size, overall bounds, and each link's centroid and convex hull.
+A link whose rule says "collision": "parts" gets a hull for each of its larger
+parts instead, so the gaps between them stay open.
 """
 
 import json
@@ -26,6 +28,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from cadlib import linear, part_name, principled, world_corners
 
 HULL_POINTS = 32
+PART_HULL_POINTS = 12
+# Parts smaller than this are left out of a link's per-part collision.
+MIN_COLLISION_PART_M = 0.06
 
 source, config_path, out_dir = sys.argv[sys.argv.index("--") + 1:]
 config = json.loads(Path(config_path).read_text())
@@ -154,6 +159,44 @@ for material in bpy.data.materials:
     shader.inputs["Roughness"].default_value = 0.55
     material.use_backface_culling = True
 
+def convex_hull(points, max_points):
+    work = bmesh.new()
+    for point in points[:: max(1, len(points) // 20000)]:
+        work.verts.new(point)
+    result = bmesh.ops.convex_hull(work, input=work.verts)
+    inside = {v for v in result["geom_interior"] + result["geom_unused"] if isinstance(v, bmesh.types.BMVert)}
+    bmesh.ops.delete(work, geom=list(inside), context="VERTS")
+    hull_mesh = bpy.data.meshes.new("hull")
+    work.to_mesh(hull_mesh)
+    work.free()
+    if len(hull_mesh.vertices) > max_points:
+        hull = bpy.data.objects.new("hull", hull_mesh)
+        scene.collection.objects.link(hull)
+        modifier = hull.modifiers.new("decimate", "DECIMATE")
+        modifier.ratio = max_points / len(hull_mesh.vertices)
+        hull_mesh = bpy.data.meshes.new_from_object(hull.evaluated_get(bpy.context.evaluated_depsgraph_get()))
+        bpy.data.objects.remove(hull)
+    return [[round(c, 4) for c in v.co] for v in hull_mesh.vertices]
+
+
+# --- Per-part collision hulls, while the parts are still separate. ---
+part_hulls = {}
+for rule in cad["links"]:
+    if rule.get("collision") != "parts":
+        continue
+    hulls = []
+    for obj in links[rule["name"]]:
+        points = mesh_points(obj)
+        extent = points.max(axis=0) - points.min(axis=0)
+        if np.linalg.norm(extent) < MIN_COLLISION_PART_M:
+            continue
+        hull = convex_hull(points, PART_HULL_POINTS)
+        if len(hull) >= 4:
+            hulls.append(hull)
+            print(f"    collision part {part_name(obj)}: {np.round(extent, 3).tolist()} m")
+    part_hulls[rule["name"]] = hulls
+    print(f"  {rule['name']}: {len(hulls)} of {len(links[rule['name']])} parts collide")
+
 # --- One mesh per link. ---
 merged = {}
 for name, members in sorted(links.items()):
@@ -188,26 +231,6 @@ for index, module in modules.items():
     wheel.parent = steer
 
 # --- Per-link collision hull and centroid, in the stowed pose. ---
-def convex_hull(points):
-    work = bmesh.new()
-    for point in points[:: max(1, len(points) // 20000)]:
-        work.verts.new(point)
-    result = bmesh.ops.convex_hull(work, input=work.verts)
-    inside = {v for v in result["geom_interior"] + result["geom_unused"] if isinstance(v, bmesh.types.BMVert)}
-    bmesh.ops.delete(work, geom=list(inside), context="VERTS")
-    hull_mesh = bpy.data.meshes.new("hull")
-    work.to_mesh(hull_mesh)
-    work.free()
-    if len(hull_mesh.vertices) > HULL_POINTS:
-        hull = bpy.data.objects.new("hull", hull_mesh)
-        scene.collection.objects.link(hull)
-        modifier = hull.modifiers.new("decimate", "DECIMATE")
-        modifier.ratio = HULL_POINTS / len(hull_mesh.vertices)
-        hull_mesh = bpy.data.meshes.new_from_object(hull.evaluated_get(bpy.context.evaluated_depsgraph_get()))
-        bpy.data.objects.remove(hull)
-    return [[round(c, 4) for c in v.co] for v in hull_mesh.vertices]
-
-
 link_meta = {}
 for rule in cad["links"]:
     if rule["name"] not in merged:
@@ -215,8 +238,10 @@ for rule in cad["links"]:
     points = mesh_points(merged[rule["name"]])
     link_meta[rule["name"]] = {
         "centroid": [round(float(v), 4) for v in points.mean(axis=0)],
-        "hull": convex_hull(points),
+        "hull": convex_hull(points, HULL_POINTS),
     }
+    if rule["name"] in part_hulls:
+        link_meta[rule["name"]]["part_hulls"] = part_hulls[rule["name"]]
 
 all_points = np.concatenate([mesh_points(o) for o in merged.values() if not o.name.startswith(("steer", "wheel"))])
 meta = {

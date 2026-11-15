@@ -81,6 +81,7 @@ func setup(robot_config: Dictionary, bumper_color: Color) -> void:
 
 func _ready() -> void:
 	_ray.exclude = [get_rid()]
+	_ray.collision_mask = 1
 
 
 func yaw() -> float:
@@ -89,6 +90,19 @@ func yaw() -> float:
 
 func ground_speed() -> float:
 	return Vector2(linear_velocity.x, linear_velocity.z).length()
+
+
+## Lets `piece` pass through every part of the robot, or stops letting it.
+func set_passes_through(piece: GamePiece, passes: bool) -> void:
+	var bodies: Array[PhysicsBody3D] = [self]
+	if superstructure:
+		for pusher in superstructure.pushers:
+			bodies.append(pusher)
+	for body in bodies:
+		if passes:
+			body.add_collision_exception_with(piece)
+		else:
+			body.remove_collision_exception_with(piece)
 
 
 ## Teleports the robot to a field position (m) and heading (rad), at rest.
@@ -105,6 +119,8 @@ func reset_pose(field_xy: Vector2, heading: float) -> void:
 		m.reset()
 	if superstructure:
 		superstructure.reset()
+	if intake:
+		intake.follow(self)
 
 
 func _physics_process(dt: float) -> void:

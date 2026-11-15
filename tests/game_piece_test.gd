@@ -105,14 +105,21 @@ func _run() -> void:
 	await _wait(0.5)
 	_check("picks up a coral at its mouth", robot.intake.held == coral)
 	robot.intake.command = 0.0
-	robot.command = Vector3(2.0, 0.0, 0.0)
-	await _wait(1.0)
+	await _wait(0.5)
+	# Driving and spinning at once: the coral must not trail behind the intake.
+	var hold: Array = robot.config["intake"]["pieces"]["coral"]["hold_m"]
+	var hold_point := Frc.to_godot(Vector3(hold[0], hold[1], hold[2]))
+	var trailing := 0.0
+	robot.command = Vector3(3.0, 0.0, 4.0)
+	for tick in Engine.physics_ticks_per_second:
+		# As it is about to be drawn, not part-way through a physics tick.
+		await process_frame
+		trailing = maxf(trailing, coral.global_position.distance_to(robot.global_transform * hold_point))
 	robot.command = Vector3.ZERO
 	await _wait(1.0)
-	var hold: Array = robot.config["intake"]["pieces"]["coral"]["hold_m"]
-	var carried := robot.global_transform * Frc.to_godot(Vector3(hold[0], hold[1], hold[2]))
-	print("carried coral is %.3f m from its hold point after driving" % coral.global_position.distance_to(carried))
-	_check("carries it while driving", robot.intake.held == coral and coral.global_position.distance_to(carried) < 0.02)
+	print("carried coral strays at most %.3f m from its hold point while driving at up to %.1f m/s" % [
+		trailing, 3.0])
+	_check("carries it rigidly while driving", robot.intake.held == coral and trailing < 0.005)
 	robot.intake.command = -1.0
 	await _wait(0.1)
 	robot.intake.command = 0.0
@@ -123,6 +130,63 @@ func _run() -> void:
 	_check("lets go of it", robot.intake.held == null and not coral.held)
 	_check("ejected coral falls to the floor", dropped.z < 0.16)
 	_check("robot is undisturbed", robot.global_basis.y.dot(Vector3.UP) > 0.99)
+
+	print("\n== End effector against game pieces ==")
+	var half_length := 0.5 * float(robot.config["frame_m"][0]) + float(robot.config["bumper_thickness_m"])
+	var ground_presets := {}
+	for preset: Dictionary in robot.superstructure.presets:
+		ground_presets[preset["name"]] = preset
+	# An algae on the floor ahead, pushed along with the intake down in front of
+	# the bumper and its rollers stopped, then again with the intake stowed.
+	var gaps := {}
+	for pose: String in ["ground_coral", "stow"]:
+		robot.reset_pose(Vector2(8.0, 2.0), 0.0)
+		robot.superstructure.go_to(ground_presets[pose])
+		var ball := pieces.spawn(GamePiece.ALGAE)
+		ball.global_position = Frc.to_godot(Vector3(9.3, 2.0, GamePiece.ALGAE_RADIUS))
+		await _wait(1.5)
+		_check("robot stands level in %s" % pose,
+				robot.global_basis.y.dot(Vector3.UP) > 0.999 and absf(robot.global_position.y) < 0.01)
+		robot.command = Vector3(0.7, 0.0, 0.0)
+		await _wait(2.5)
+		gaps[pose] = Frc.from_godot(ball.global_position).x - Frc.from_godot(robot.global_position).x - half_length
+		robot.command = Vector3.ZERO
+		ball.queue_free()
+		await _wait(0.5)
+	print("pushed algae's centre is %.2f m ahead of the bumper with the intake down, %.2f m with it stowed" % [
+		gaps["ground_coral"], gaps["stow"]])
+	_check("the intake pushes an algae along ahead of the bumper", gaps["ground_coral"] > gaps["stow"] + 0.05)
+	# A coral lying across the robot's path, driven over with the rollers running.
+	robot.reset_pose(Vector2(8.0, 2.0), 0.0)
+	robot.superstructure.go_to(ground_presets["ground_coral"])
+	var lying := pieces.spawn(GamePiece.CORAL)
+	lying.global_transform = Transform3D(
+			Basis(Vector3.RIGHT, PI / 2.0), Frc.to_godot(Vector3(9.3, 2.0, GamePiece.CORAL_RADIUS)))
+	await _wait(1.5)
+	robot.intake.command = 1.0
+	robot.command = Vector3(1.0, 0.0, 0.0)
+	await _wait(1.5)
+	robot.command = Vector3.ZERO
+	robot.intake.command = 0.0
+	_check("picks a coral up off the floor by driving at it", robot.intake.held == lying)
+	lying.queue_free()
+	await _wait(0.1)
+	robot.reset_pose(Vector2(8.0, 2.0), 0.0)
+	robot.superstructure.go_to(ground_presets["ground_algae"])
+	var rolling := pieces.spawn(GamePiece.ALGAE)
+	rolling.global_position = Frc.to_godot(Vector3(9.3, 2.0, GamePiece.ALGAE_RADIUS))
+	await _wait(1.5)
+	robot.intake.wanted = GamePiece.ALGAE
+	robot.intake.command = 1.0
+	robot.command = Vector3(1.0, 0.0, 0.0)
+	await _wait(1.5)
+	robot.command = Vector3.ZERO
+	robot.intake.command = 0.0
+	robot.intake.wanted = GamePiece.CORAL
+	_check("picks an algae up off the floor by driving at it", robot.intake.held == rolling)
+	rolling.queue_free()
+	robot.superstructure.go_to(ground_presets["stow"])
+	await _wait(1.5)
 
 	print("\n== Scoring coral on the reef ==")
 	for piece in pieces.get_children():
@@ -140,7 +204,6 @@ func _run() -> void:
 	]:
 		var backward: bool = robot.config["controls"]["back_to_reef"].has(shot[0])
 		var gap: float = standoffs[shot[0]]
-		var half_length := 0.5 * float(robot.config["frame_m"][0]) + float(robot.config["bumper_thickness_m"])
 		robot.reset_pose(Vector2(REEF_FACE_X - half_length - gap, BRANCH_Y), PI if backward else 0.0)
 		await _wait(0.5)
 		var scored := pieces.spawn(GamePiece.CORAL)
@@ -253,6 +316,57 @@ func _run() -> void:
 	robot.driver_heading = PI
 	_check("left and right swap for the red driver", absf(chooser.align_target(1.0).y - (BRANCH_Y - 2.0 * 0.1643)) < 0.01)
 	robot.driver_heading = 0.0
+
+	print("\n== Algae off the reef ==")
+	pieces.reset()
+	await _wait(0.2)
+	var held_coral := pieces.spawn(GamePiece.CORAL)
+	robot.reset_pose(Vector2(2.6, 4.026), 0.0)
+	robot.intake.load_piece(held_coral)
+	chooser._unhandled_input(_press("l3"))
+	_check("with a coral in hand L3 is the coral pose", not chooser.algae_mode and robot.superstructure.preset_name == "l3")
+	held_coral.queue_free()
+	await _wait(0.1)
+	chooser._unhandled_input(_press("l2"))
+	_check("with empty hands L2 switches to algae mode", chooser.algae_mode and robot.superstructure.preset_name == "l2_algae_front")
+	chooser._unhandled_input(_press("stow"))
+	_check("stowing before taking the algae switches back", not chooser.algae_mode)
+	# The algae on this face of the blue reef sits at L3 height.
+	chooser._unhandled_input(_press("l3"))
+	var middle := chooser.align_target(1.0)
+	_check("auto-align goes to the middle of the face for an algae", absf(middle.y - 4.026) < 0.01)
+	for tick in int(3.0 * Engine.physics_ticks_per_second):
+		chooser._physics_process(0.0)
+		robot.command = chooser.align_command(1.0)
+		await physics_frame
+	robot.command = Vector3.ZERO
+	var taken := robot.intake.held
+	_check("takes the reef's algae without the intake button", taken != null and taken.kind == GamePiece.ALGAE)
+	_check("stays in algae mode while carrying it", chooser.algae_mode)
+	# Up to the barge from the blue side, under the blue alliance's net.
+	var net_game := Match.new(field, pieces)
+	root.add_child(net_game)
+	net_game.start(135.0, true)
+	robot.reset_pose(Vector2(0.5 * Frc.FIELD_LENGTH - 0.75, 6.0), 0.0)
+	chooser._unhandled_input(_press("l4"))
+	_check("L4 is then the net pose", robot.superstructure.preset_name == "net_algae")
+	await _wait(2.5)
+	Input.action_press("place")
+	for tick in 10:
+		chooser._physics_process(0.0)
+		await physics_frame
+	Input.action_release("place")
+	chooser._physics_process(0.0)
+	_check("scoring the algae switches back to coral mode", robot.intake.held == null and not chooser.algae_mode)
+	robot.intake.command = 0.0
+	await _wait(3.0)
+	var netted_at := Frc.from_godot(taken.global_position)
+	print("algae thrown from the net pose lies at (%.2f, %.2f, %.2f): blue %d" % [
+		netted_at.x, netted_at.y, netted_at.z, net_game.scores["blue"]])
+	_check("the algae lands in the net and scores 4", net_game.scores["blue"] == 4)
+	net_game.queue_free()
+	robot.superstructure.go_to(presets["stow"])
+	await _wait(1.5)
 	chooser.queue_free()
 
 	print("\n== Auto-align, then score ==")
@@ -313,6 +427,13 @@ func _run() -> void:
 
 	print("\n%s" % ("ALL PASSED" if failures == 0 else "%d FAILED" % failures))
 	quit(failures)
+
+
+func _press(action: String) -> InputEventAction:
+	var event := InputEventAction.new()
+	event.action = action
+	event.pressed = true
+	return event
 
 
 func _wait(seconds: float) -> void:

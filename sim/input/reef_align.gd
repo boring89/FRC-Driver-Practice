@@ -30,8 +30,9 @@ func faces_reef(position: Vector2, heading: float) -> bool:
 ## Field pose (x, y, heading) to score from: bumper `standoff` back from the
 ## nearest reef face, with the robot's back to the reef if `backward`. `side`
 ## picks the branch: +1 for the one further to the left as the driver, looking
-## along `driver_heading`, sees the field, -1 for the other. On the far side
-## of a reef that is the opposite of left and right for someone facing the face.
+## along `driver_heading`, sees the field, -1 for the other, 0 for the middle
+## of the face. On the far side of a reef that is the opposite of left and
+## right for someone facing the face.
 func target(
 		position: Vector2, half_length: float, standoff: float,
 		side: float, backward: bool, driver_heading: float) -> Vector3:

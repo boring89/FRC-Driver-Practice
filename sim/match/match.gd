@@ -12,6 +12,8 @@ extends Node
 const _EVALUATE_PERIOD := 0.1
 # A piece still moving faster than this has not been scored yet.
 const _REST_SPEED := 0.25
+# An algae lying in the net never quite stops rocking on its mesh.
+const _NET_REST_SPEED := 1.0
 # How close a coral's centre must be to where one hangs on a branch.
 const _BRANCH_REACH := 0.09
 
@@ -97,7 +99,7 @@ func evaluate() -> void:
 		if piece.kind == GamePiece.CORAL:
 			piece.on_reef = _count_coral(at, resting, totals, occupied)
 		elif piece.kind == GamePiece.ALGAE:
-			_count_algae(piece, at, resting, totals)
+			_count_algae(piece, at, totals)
 	scores = totals
 
 
@@ -122,9 +124,9 @@ func _count_coral(at: Vector3, resting: bool, totals: Dictionary, occupied: Dict
 	return false
 
 
-func _count_algae(piece: GamePiece, at: Vector3, resting: bool, totals: Dictionary) -> void:
+func _count_algae(piece: GamePiece, at: Vector3, totals: Dictionary) -> void:
 	var net: Dictionary = _cfg["net"]
-	if resting and absf(at.x - 0.5 * Frc.FIELD_LENGTH) < float(net["half_depth_m"]) \
+	if piece.linear_velocity.length() < _NET_REST_SPEED and absf(at.x - 0.5 * Frc.FIELD_LENGTH) < float(net["half_depth_m"]) \
 			and at.z > float(net["min_height_m"]):
 		# Each alliance's net is taken to be the half above its own cages.
 		totals["blue" if at.y > 0.5 * Frc.FIELD_WIDTH else "red"] += int(net["points"])

@@ -6,6 +6,9 @@ extends RigidBody3D
 const CORAL := "coral"
 const ALGAE := "algae"
 const GROUP := "game_pieces"
+## Collision layer of the robot parts that push game pieces about but pass
+## through the field, such as an end effector.
+const PUSHER_LAYER := 2
 
 const CORAL_LENGTH := 0.3016
 const CORAL_RADIUS := 0.05715
@@ -31,6 +34,7 @@ static func create(piece_kind: String) -> GamePiece:
 	var piece := GamePiece.new()
 	piece.kind = piece_kind
 	piece.add_to_group(GROUP)
+	piece.collision_mask = 1 | PUSHER_LAYER
 	piece.continuous_cd = true
 	var material := PhysicsMaterial.new()
 	var surface := StandardMaterial3D.new()
@@ -87,7 +91,7 @@ func grab() -> void:
 func release(velocity: Vector3) -> void:
 	held = false
 	collision_layer = 1
-	collision_mask = 1
+	collision_mask = 1 | PUSHER_LAYER
 	freeze = false
 	linear_velocity = velocity
 	angular_velocity = Vector3.ZERO

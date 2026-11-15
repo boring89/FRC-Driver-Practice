@@ -7,6 +7,8 @@ extends RefCounted
 
 # How quickly a captured piece is drawn from where it was to where it is held.
 const _DRAW_IN_RATE := 20.0
+# Close enough to the hold point to count as seated there.
+const _SEATED := 0.001
 # A released piece ignores the robot for at least this long, and until it is
 # this far from where it was carried: a scored coral sits right where the
 # intake still is, and must not be knocked off as the arm withdraws.
@@ -31,6 +33,10 @@ var _reach := {}
 var _eject_speed := {}
 var _released: GamePiece
 var _clearance := 0.0
+# Where the held piece still is relative to where it is carried, shrinking to
+# nothing as it is drawn in. Kept in the intake's own frame, so however the
+# robot moves a seated piece stays put in the intake.
+var _draw_in := Transform3D.IDENTITY
 
 
 func _init(cfg: Dictionary) -> void:
@@ -53,7 +59,23 @@ func load_piece(piece: GamePiece) -> void:
 	if held != null or not _hold.has(piece.kind):
 		return
 	held = piece
+	_draw_in = Transform3D.IDENTITY
 	piece.grab()
+
+
+## Empties the intake without ejecting anything, for when the field is reset.
+func reset(robot: SwerveRobot) -> void:
+	if _released != null and is_instance_valid(_released):
+		robot.set_passes_through(_released, false)
+	_released = null
+	held = null
+	command = 0.0
+
+
+## Moves the held piece to where the intake carries it right now.
+func follow(robot: SwerveRobot) -> void:
+	if held != null and is_instance_valid(held):
+		held.global_transform = _carried(robot, held.kind) * _draw_in
 
 
 func step(dt: float, robot: SwerveRobot) -> void:
@@ -65,14 +87,17 @@ func step(dt: float, robot: SwerveRobot) -> void:
 		elif _clearance <= 0.0:
 			var carried_at := link_pose * (_hold[_released.kind] as Transform3D).origin
 			if _released.global_position.distance_to(carried_at) > _CLEARANCE_DISTANCE:
-				robot.remove_collision_exception_with(_released)
+				robot.set_passes_through(_released, false)
 				_released = null
 
 	if held != null and not is_instance_valid(held):
 		held = null
 	if held != null:
-		var carried := link_pose * (_hold[held.kind] as Transform3D)
-		held.global_transform = held.global_transform.interpolate_with(carried, 1.0 - exp(-_DRAW_IN_RATE * dt))
+		if _draw_in.origin.length() < _SEATED:
+			_draw_in = Transform3D.IDENTITY
+		else:
+			_draw_in = _draw_in.interpolate_with(Transform3D.IDENTITY, 1.0 - exp(-_DRAW_IN_RATE * dt))
+		follow(robot)
 		if command < 0.0:
 			_eject(robot)
 	elif command > 0.0:
@@ -88,7 +113,13 @@ func step(dt: float, robot: SwerveRobot) -> void:
 			var mouth := link_pose * (_mouth[piece.kind] as Vector3)
 			if piece.global_position.distance_to(mouth) < float(_reach[piece.kind]):
 				load_piece(piece)
+				_draw_in = _carried(robot, piece.kind).affine_inverse() * piece.global_transform
 				break
+
+
+## Where a piece of `kind` sits in the world when the intake carries it.
+func _carried(robot: SwerveRobot, kind: String) -> Transform3D:
+	return robot.global_transform * robot.superstructure.link_pose(_link) * (_hold[kind] as Transform3D)
 
 
 ## Lets go of the held piece, pushing it out along the axis it is held by:
@@ -100,8 +131,8 @@ func _eject(robot: SwerveRobot) -> void:
 	var offset := piece.global_position - robot.global_transform * robot.center_of_mass
 	var carried_velocity := robot.linear_velocity + robot.angular_velocity.cross(offset)
 	if _released != null and is_instance_valid(_released):
-		robot.remove_collision_exception_with(_released)
-	robot.add_collision_exception_with(piece)
+		robot.set_passes_through(_released, false)
+	robot.set_passes_through(piece, true)
 	_released = piece
 	_clearance = _CLEARANCE_TIME
 	piece.release(carried_velocity + piece.global_basis.y * way * float(_eject_speed[piece.kind]))

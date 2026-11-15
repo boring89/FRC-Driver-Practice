@@ -4,7 +4,8 @@ extends RefCounted
 ##
 ## Joint motion is solved here from motor torque, link inertia and gravity (the
 ## way WPILib's arm and elevator simulations do it) rather than with physics
-## joints. The links ride on the chassis body as visuals and convex colliders,
+## joints. The links ride on the chassis body as visuals and convex colliders
+## (an end effector's colliders on a body of their own that only game pieces feel),
 ## their weight moves the body's centre of mass, and their acceleration pushes
 ## back on the chassis.
 
@@ -22,16 +23,21 @@ class Link:
 	var stowed_com: Vector3
 	var com: Vector3
 	var visual: Node3D
-	## False for a link that has to reach in among field elements (an end
-	## effector around a reef branch), where a convex hull would be far too fat.
-	var collides := true
-	var collider: CollisionShape3D
+	## The link's convex hull on the chassis body, or one hull per part where
+	## the model has them.
+	var colliders: Array[CollisionShape3D] = []
+	## Set instead for a link that has to reach in among field elements (an end
+	## effector around a reef branch): a body of its own carrying its colliders,
+	## which pushes game pieces about but passes through the field.
+	var pusher: AnimatableBody3D
 	var last_com: Vector3
 	var last_velocity: Vector3
 	var settled := false
 
 
 var joints: Array[MechanismJoint] = []
+## The bodies of the links that only collide with game pieces.
+var pushers: Array[AnimatableBody3D] = []
 var presets: Array = []
 var preset_name := ""
 ## Off while posing by hand, so each joint goes straight where it is told.
@@ -81,33 +87,41 @@ func setup(cfg: Dictionary, model: Node, meta: Dictionary, body: RigidBody3D) ->
 			link.joint = by_name[joint_cfg["name"]]
 			link.ratio = link_cfg.get("ratio", 1.0)
 			link.mass = link_cfg["mass_kg"]
-			link.collides = link_cfg.get("collides", true)
+			if link_cfg.get("collides", "all") == "pieces":
+				link.pusher = AnimatableBody3D.new()
+				# Moved by hand every tick, not by an animation.
+				link.pusher.sync_to_physics = false
+				link.pusher.collision_layer = GamePiece.PUSHER_LAYER
+				link.pusher.collision_mask = 0
+				body.add_child(link.pusher)
+				pushers.append(link.pusher)
 			link.visual = model.find_child(link_cfg["name"], true, false)
 			moving[link_cfg["name"]] = link
 			_links.append(link)
 	_links_by_name = moving
 
-	# Every link above the drivebase collides as its own convex hull.
+	# Every link above the drivebase collides as its own convex hull, or as
+	# the hulls of its parts where the model has them.
 	var link_meta: Dictionary = meta["links"]
 	for link_name: String in link_meta:
-		if moving.has(link_name) and not (moving[link_name] as Link).collides:
-			var hollow: Link = moving[link_name]
-			var centre: Array = link_meta[link_name]["centroid"]
-			hollow.stowed_com = Frc.to_godot(Vector3(centre[0], centre[1], centre[2]))
-			hollow.com = hollow.stowed_com
-			continue
-		var points := PackedVector3Array()
-		for point: Array in link_meta[link_name]["hull"]:
-			points.append(Frc.to_godot(Vector3(point[0], point[1], point[2])))
-		var shape := ConvexPolygonShape3D.new()
-		shape.points = points
-		var collider := CollisionShape3D.new()
-		collider.shape = shape
-		body.add_child(collider)
-		if moving.has(link_name):
-			var link: Link = moving[link_name]
+		var link: Link = moving.get(link_name)
+		var hulls: Array = link_meta[link_name].get("part_hulls", [link_meta[link_name]["hull"]])
+		for hull: Array in hulls:
+			var points := PackedVector3Array()
+			for point: Array in hull:
+				points.append(Frc.to_godot(Vector3(point[0], point[1], point[2])))
+			var shape := ConvexPolygonShape3D.new()
+			shape.points = points
+			var collider := CollisionShape3D.new()
+			collider.shape = shape
+			if link and link.pusher:
+				link.pusher.add_child(collider)
+				continue
+			body.add_child(collider)
+			if link:
+				link.colliders.append(collider)
+		if link:
 			var centroid: Array = link_meta[link_name]["centroid"]
-			link.collider = collider
 			link.stowed_com = Frc.to_godot(Vector3(centroid[0], centroid[1], centroid[2]))
 			link.com = link.stowed_com
 
@@ -226,8 +240,10 @@ func step(dt: float, body: RigidBody3D, v_bat: float) -> float:
 		var pose := _link_pose(link)
 		link.com = pose * link.stowed_com
 		link.visual.transform = pose
-		if link.collider:
-			link.collider.transform = pose
+		for collider in link.colliders:
+			collider.transform = pose
+		if link.pusher:
+			link.pusher.transform = pose
 
 		# The chassis is one rigid body, so a link speeding up inside it has to
 		# push back explicitly for momentum to balance.
